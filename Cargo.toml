@@ -1,10 +1,20 @@
 [package]
-name = "enc"
-version = "0.1.0"
+name = "nutek-cipher"
+version = "0.2.0"
 edition = "2021"
+categories = ["command-line-interface"]
+description = "Encrypt and decrypt files and text"
+license = "MIT"
+repository = "https://github.com/nutek-terminal/nutek-cipher"
+authors = ["Szymon Błaszczyński <museyoucoulduse@gmail.com>"]
+readme = "README.md"
+keywords = ["crypto", "openssl", "cipher", "encryption", "decryption"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 openssl = "0.10.45"
 rand = "0.8.5"
+clap = { version = "4.1.4", features = ["derive"] }
+rpassword = "7.2"
+
