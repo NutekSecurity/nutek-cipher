@@ -20,14 +20,14 @@ pub struct Cli {
     #[arg(short, long)]
     pub output: Option<String>,
 
-    /// from stdin
+    /// key from file
     #[arg(long)]
-    pub stdin: Option<String>,
+    pub key_file: Option<String>,
 
-    /// password from file
+    /// nonce from file
     #[arg(long)]
-    pub password_file: Option<String>,
-    
+    pub nonce_file: Option<String>,
+
     /// print result to stdout
     #[arg(long, default_value = "false")]
     pub stdout: bool,

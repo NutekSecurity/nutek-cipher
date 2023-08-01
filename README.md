@@ -8,6 +8,8 @@ Encrypt and decrypt files and text.
 cargo install nutek-cipher
 ```
 
+or download binary for your OS type from _GitHub_ release page
+
 ## usage
 
 ```shell
@@ -20,22 +22,29 @@ Options:
   -o, --output <OUTPUT>                set output file
       --stdin <STDIN>                  from stdin
       --password-file <PASSWORD_FILE>  password from file
-      --stdout                         print result to stdout
-  -h, --help                           Print help
-  -V, --version                        Print version
+      --nonce-file <NONCE_FILE>        nonce from file
+      --stdout                         print results to stdout
+  -h, --help                           print help
+  -V, --version                        print version
 ```
 
 ## cipher in use
 
-This program uses *AES CBC* cipher with *32 bit* key. It's enough for home use.
+This program uses *AES-GCM-SIV* cipher with *32 bytes* key and *12 bytes* nonce. It's enough for home use.
 
 ## roadmap
 
-* hash password and derive _asymetric_ key
-* include _initialization vector_
+* changed encryption method to AES-GCM-SIV from AES-CBC using
+AES-256 encryption algorithm
+* pipe enabled - pass data from command line and export to file,
+or output as ciphertext to terminal with no unreadable characters
+* write to files
+* read nonce and password from stdin on runtime and from files
 
 ## crypto gurus
 
-Probably my vocabulary is wrong, but I want to supply a working copy of encryption/decryption tool;
+Probably my vocabulary is wrong, but I want to supply a working copy
+of encryption/decryption tool;
 
-I'm opened to pull requests correcting my mistakes, although for now there is nothing wrong with the program itself.
+I'm opened to pull requests correcting my mistakes, although for now
+there is nothing wrong with the program itself.
