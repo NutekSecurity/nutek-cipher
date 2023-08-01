@@ -22,7 +22,6 @@ Options:
   -d, --decrypt                        decrypt
   -i, --input <INPUT>                  set input file
   -o, --output <OUTPUT>                set output file
-      --stdin <STDIN>                  from stdin
       --key-file <KEY_FILE>            key from file
       --nonce-file <NONCE_FILE>        nonce from file
       --stdout                         print results to stdout
