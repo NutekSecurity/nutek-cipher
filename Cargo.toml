@@ -8,7 +8,7 @@ license = "MIT"
 repository = "https://github.com/nutek-terminal/nutek-cipher"
 authors = ["Szymon Błaszczyński <museyoucoulduse@gmail.com>"]
 readme = "README.md"
-keywords = ["crypto", "encryption", "command-line-utilities"]
+keywords = ["crypto", "encryption", "cli"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
