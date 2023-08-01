@@ -1,6 +1,6 @@
 [package]
 name = "nutek-cipher"
-version = "0.3.2"
+version = "0.3.4"
 edition = "2021"
 categories = ["command-line-interface"]
 description = "Encrypt and decrypt files and text"
