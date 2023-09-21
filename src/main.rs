@@ -1,6 +1,7 @@
 extern crate aes_gcm_siv;
 use std::fs::File;
 use std::io::{self, BufReader, BufWriter, Read, Write, BufRead};
+use std::process::exit;
 use aes_gcm_siv::aead::consts::U12;
 use aes_gcm_siv::aead::generic_array::GenericArray;
 use clap::Parser;
@@ -33,7 +34,17 @@ fn encrypt(plaintext: &[u8], nonce_slice: &[u8], key_slice: &[u8]) -> Vec<u8> {
     ciphertext
 }
 
+fn key_and_nonce_warning() {
+    // print warning to protect key and nonce, and tell user they are
+    // responsible for keeping them safe and not losing them
+    // because they are not stored anywhere and not recoverable
+    // also needed to decrypt the data
+    println!("💥❗️  WARNING: You are responsible for keeping your 🔑 key and 🔑 nonce safe and not losing them. They are not stored anywhere and not recoverable. You will need them to decrypt your data.");
+}
+
 fn main() {
+    // max 65,536 MB
+
     let cli = cli::Cli::parse();
     
     let stdin = io::stdin();
@@ -41,7 +52,7 @@ fn main() {
     let lines = handle.lines();
     // unwrap lines
     let lines = lines.map(|line| line.unwrap());
-    let mut lines = lines.peekable();
+    // let lines = lines.peekable();
 
     let key_file = cli.key_file.unwrap_or("".to_string());
     let mut key = String::new();
@@ -51,6 +62,11 @@ fn main() {
         key = key.trim().to_string();
     } else {
         key = rpassword::prompt_password("🔑 Your key [32 characters] - to skip press [Enter↩]: ").unwrap();
+        let key_replay = rpassword::prompt_password("🔑 Confirm your key - to skip press [Enter↩]: ").unwrap();
+        if key != key_replay {
+            println!("❌ Keys don't match");
+            exit(1);
+        }
     }
     if key == "" {
         key = rand::thread_rng().sample_iter(&rand::distributions::Alphanumeric).take(32).map(char::from).collect();
@@ -69,6 +85,11 @@ fn main() {
         nonce = nonce.trim().to_string();
     } else {
         nonce = rpassword::prompt_password("🔑 Your nonce [12 characters] - to skip press [Enter↩]: ").unwrap();
+        let nonce_replay = rpassword::prompt_password("🔑 Confirm your nonce - to skip press [Enter↩]: ").unwrap();
+        if nonce != nonce_replay {
+            println!("❌ Nonces don't match");
+            exit(1);
+        }
     }
     if nonce == "" {
         nonce = rand::thread_rng().sample_iter(&rand::distributions::Alphanumeric).take(12).map(char::from).collect();
@@ -86,43 +107,76 @@ fn main() {
     let output_file = cli.output.unwrap_or("".to_string());
     
 
-    if lines.peek().is_some() {
+    // if lines.peek().is_some() {
+        println!("📝 Processing input from user...");
+        if input_file != "" {
+            println!("📝 Input file: {}", input_file);
+            if stdout || output_file != "" {
+                if cli.encrypt == true {
+                    println!("🔐 Encrypting file mode on... Proceeding...");
+                    encrypt_file(input_file, output_file, &key, &nonce, stdout).expect("can't encrypt");
+                    key_and_nonce_warning();
+                } else if cli.decrypt == true {
+                    println!("🔓 Decrypting file mode on... Proceeding...");
+                    decrypt_file(input_file, output_file, &key, &nonce, stdout).expect("can't decrypt");
+                } else {
+                    println!("❌ Invalid mode. Must be --encrypt or --decrypt");
+                }
+            } else {
+                println!("❌ I must have either --output or --stdout");
+            }
+            exit(0);
+        }
         if stdout || output_file != "" {
             if cli.encrypt == true {
+                println!("🔐 Encrypting stdin mode on... Proceeding...");
                 let mut stdin = String::new();
                 for line in lines {
                     if stdin != "" {
                         stdin = format!("{}\n{}", stdin, line);
                     } else {
+                        if line == "" {
+                            println!("❌ No input");
+                            exit(1);
+                        }
                         stdin = format!("{}", line);
                     }
                 }
+                // convert to UTF-8
                 if stdin == "" {
                     println!("❌ No input");
-                    return;
+                    exit(1);
                 }
                 if stdin.len() > aes_gcm_siv::P_MAX.try_into().unwrap() {
                     println!("❌ Input is too long. Maximum is {} characters", aes_gcm_siv::P_MAX);
                     return;
                 }
+                println!("📝 Successfully read {} characters from stdin... Continuing...", stdin.len());
                 encrypt_stdin(stdin, output_file, stdout, &key, &nonce).expect("can't encrypt");
+                key_and_nonce_warning();
             } else if cli.decrypt == true {
+                println!("🔐 Decrypting stdin mode on... Proceeding...");
                 let mut stdin = String::new();
                 for line in lines {
                     if stdin != "" {
                         stdin = format!("{}\n{}", stdin, line);
                     } else {
+                        if line == "" {
+                            println!("❌ No input");
+                            exit(1);
+                        }
                         stdin = format!("{}", line);
                     }
                 }
                 if stdin == "" {
                     println!("❌ No input");
-                    return;
+                    exit(1);
                 }
                 if stdin.len() > aes_gcm_siv::C_MAX.try_into().unwrap() {
                     println!("❌ Input is too long. Maximum is {} characters", aes_gcm_siv::C_MAX);
                     return;
                 }
+                println!("📝 Successfully read {} characters from stdin... Continuing...", stdin.len());
                 decrypt_stdin(stdin, output_file, stdout, &key, &nonce).expect("can't decrypt");
             } else {
                 println!("❌ Invalid mode. Must be --encrypt or --decrypt");
@@ -130,21 +184,9 @@ fn main() {
         } else {
             println!("❌ I must have either --output or --stdout");
         }
-    } else if input_file != "" {
-        if stdout || output_file != "" {
-            if cli.encrypt == true {
-                encrypt_file(input_file, output_file, &key, &nonce, stdout).expect("can't encrypt");
-            } else if cli.decrypt == true {
-                decrypt_file(input_file, output_file, &key, &nonce, stdout).expect("can't decrypt");
-            } else {
-                println!("❌ Invalid mode. Must be --encrypt or --decrypt");
-            }
-        } else {
-            println!("❌ I must have --output");
-        }
-    } else {
-        println!("❌ I must have either --input or data from pipe");
-    }
+    // } else {
+    //     println!("❌ I must have either --input or data from pipe");
+    // }
 
         
 }
@@ -211,14 +253,20 @@ fn decrypt_stdin(ciphertext: String, output_file: String, stdout: bool, password
 fn encrypt_file(input_file: String, output_file: String, password: &str, nonce: &str, stdout: bool) -> Result<(), Box<dyn std::error::Error>> {
     // Read the input file
     let mut input_file = BufReader::new(File::open(input_file)?);
-    let mut input_contents = String::new();
-    input_file.read_to_string(&mut input_contents)?;
+    let mut input_contents = Vec::new();
+    input_file.read_to_end(&mut input_contents)?;
+    println!("📝 Successfully read {} characters from file... Continuing...", input_contents.len());
 
     // Encrypt the input contents
     println!("🔐 Encrypting...");
-    let encrypted_content = encrypt(input_contents.as_bytes(), nonce.as_bytes(), password.as_bytes());
+    let encrypted_content = encrypt(&input_contents, nonce.as_bytes(), password.as_bytes());
     println!("✅ Done!");
-    if output_file != "" {
+
+    // clone to check if output file is not empty string or is empty string
+    let output_file_is_not_none = output_file.clone();
+    let output_file_is_none = output_file.clone();
+
+    if output_file_is_not_none != "" {
         // Write the encrypted contents to the output file
         let file = output_file.clone();
         let mut output_file_buf = BufWriter::new(File::create(output_file)?);
@@ -236,9 +284,17 @@ fn encrypt_file(input_file: String, output_file: String, password: &str, nonce: 
         println!("🔑 Wrote key to: {}", password_file_clone);
     }
     
-    if stdout {
-        let encoded = hex::encode(encrypted_content);
+    let encoded = hex::encode(encrypted_content);
+    if stdout && encoded.len() <= 4800 {
         println!("🔐 Ciphertext: \n{}", encoded);
+        println!("🔑 Nonce: \n{}", nonce);
+        println!("🔑 Key: \n{}", password);
+    } else if stdout && encoded.len() > 4800 && output_file_is_none == "" {
+        println!("🔐 Ciphertext: \nToo long to display... {} characters; Maybe you want to write it to file? Use -o or --output", encoded.len());
+        println!("🔑 Nonce: \n{}", nonce);
+        println!("🔑 Key: \n{}", password);
+    } else if stdout && encoded.len() > 4800  {
+        println!("🔐 Ciphertext: \nToo long to display... {} characters;", encoded.len());
         println!("🔑 Nonce: \n{}", nonce);
         println!("🔑 Key: \n{}", password);
     }
@@ -249,15 +305,20 @@ fn encrypt_file(input_file: String, output_file: String, password: &str, nonce: 
 fn decrypt_file(input_file: String, output_file: String, password: &str, nonce: &str, stdout: bool) -> Result<(), Box<std::io::Error>> {
     // Read the encrypted file back in
     let mut encrypted_file = BufReader::new(File::open(input_file)?);
-    let mut encrypted_content = Vec::new();
-    encrypted_file.read_to_end(&mut encrypted_content)?;
+    let mut encrypted_contents = Vec::new();
+    encrypted_file.read_to_end(&mut encrypted_contents)?;
+    println!("📝 Successfully read {} characters from file... Continuing...", encrypted_contents.len());
     
     // Decrypt the contents
     println!("🔓 Decrypting...");
-    let decrypted_content = decrypt(password.as_bytes(), nonce.as_bytes(), encrypted_content);
+    let decrypted_content = decrypt(password.as_bytes(), nonce.as_bytes(), encrypted_contents);
     println!("✅ Done!");
     if let Some(decrypted_content) = decrypted_content {
-        if output_file != "" {
+        // clone to check if output file is not empty string or is empty string
+        let output_file_is_not_none = output_file.clone();
+        let output_file_is_none = output_file.clone();
+
+        if output_file_is_not_none != "" {
             // Write the decrypted contents to the output file
             let file = output_file.clone();
             let mut output_file_buf = BufWriter::new(File::create(output_file)?);
@@ -265,9 +326,15 @@ fn decrypt_file(input_file: String, output_file: String, password: &str, nonce: 
             println!("📝 Wrote decrypted content to {}", file);
         }
 
-        if stdout {
-            println!("📝 Plaintext: \n{}", String::from_utf8_lossy(&decrypted_content));
+        let decrypted_content = String::from_utf8_lossy(&decrypted_content);
+        if stdout && decrypted_content.len() <= 4800 {
+            println!("📝 Plaintext: \n{}", decrypted_content);
+        } else if stdout && decrypted_content.len() > 4800 && output_file_is_none == "" {
+            println!("📝 Plaintext: \nToo long to display... {} characters; Maybe you want to write it to file? Use -o or --output", decrypted_content.len());
+        } else if stdout && decrypted_content.len() > 4800 {
+            println!("📝 Plaintext: \nToo long to display... {} characters;", decrypted_content.len());
         }
+
     } else {
         println!("❌ Decryption failed. Wrong 🔑 key, 🔑 nonce or 🥷 empty?");
         return Err::<(), Box<std::io::Error>>(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Decryption failed. Wrong key, nonce or empty?")))

@@ -48,7 +48,8 @@ or output as ciphertext to terminal with no unreadable characters
 * ✅ write to files
 * ✅ read nonce and password from stdin on runtime and from files
 * ✅ write tests
-* (...)
+* 💥 fail better
+* ✅ repair file encryption/decryption
 
 ## crypto gurus
 
@@ -56,4 +57,10 @@ Probably my vocabulary is wrong, but I want to supply a working copy
 of encryption/decryption tool;
 
 I'm opened to pull requests correcting my mistakes, although for now
-there is nothing wrong with the program itself.
+there is nothing wrong with the program itself. And after no input from
+community I will assume that everything is fine.
+
+## license
+
+Read [LICENSE](/LICENSE) file for more information (contact me for
+commercial license).
