@@ -1,13 +1,15 @@
-MIT License
+LICENSE
+
+The user is granted a non-exclusive, perpetual license to use,
+and distribute the software, subject to the following terms:
+The user must display the following copyright notice in all copies of the
+software:
 
 Copyright (c) 2023 Szymon Błaszczyński
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+The user is not permitted to sublicense the software.
+The user is not permitted to use the software for commercial purposes without
+a separate commercial license from Szymon Błaszczyński.
 
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
