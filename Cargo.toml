@@ -1,6 +1,6 @@
 [package]
 name = "nutek-cipher"
-version = "0.3.5"
+version = "1.0.0"
 edition = "2021"
 categories = ["command-line-interface"]
 description = "Encrypt and decrypt files and text"
@@ -8,7 +8,7 @@ license-file = "LICENSE"
 repository = "https://github.com/nutek-terminal/nutek-cipher"
 authors = ["Szymon Błaszczyński <museyoucoulduse@gmail.com>"]
 readme = "README.md"
-keywords = ["crypto", "encryption", "cli"]
+keywords = ["decryption", "encryption", "cli"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -18,3 +18,4 @@ rand = "0.8.5"
 clap = { version = "4.1.4", features = ["derive"] }
 rpassword = "7.2"
 hex = "0.4.3"
+text_io = "0.1.12"

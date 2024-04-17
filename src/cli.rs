@@ -14,23 +14,27 @@ pub struct Cli {
 
     /// set input file
     #[arg(short, long)]
-    pub input: Option<String>,
+    pub input_file: Option<String>,
 
-    /// set output file
+    /// set result file
     #[arg(short, long)]
-    pub output: Option<String>,
+    pub output_file: Option<String>,
 
-    /// key from file
+    /// codes from file
     #[arg(long)]
-    pub key_file: Option<String>,
+    pub codes_file: Option<String>,
 
-    /// nonce from file
-    #[arg(long)]
-    pub nonce_file: Option<String>,
-
+    /// display codes from file and exit
+    #[arg(long, default_value = "false")]
+    pub display_codes: bool,
+    
     /// print result to stdout
     #[arg(long, default_value = "false")]
     pub stdout: bool,
+
+    /// display license and exit
+    #[arg(short, long)]
+    pub license: bool,
 
 }
 
