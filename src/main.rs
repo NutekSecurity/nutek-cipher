@@ -191,7 +191,7 @@ fn main() {
         }
         if stdout || output_file != "" {
             if cli.encrypt == true {
-                println!("🔐 Encrypting from pipe - use cat, echo, Write-Host, etc... CTRL+D to proceed with text when no pipe is provided...");
+                println!("🔐 Encrypting from pipe - use cat, echo, etc... CTRL+D (Unix) & CTRL+Z (Windows) to proceed with text when no pipe is provided...");
                 let mut stdin = String::new();
 
                 for line in lines {

@@ -18,15 +18,16 @@ or download binary for your OS type from _GitHub_ release page
 Usage: nutek-cipher [OPTIONS]
 
 Options:
-  -e, --encrypt                        encrypt
-  -d, --decrypt                        decrypt
-  -i, --input <INPUT>                  set input file
-  -o, --output <OUTPUT>                set output file
-      --key-file <KEY_FILE>            key from file
-      --nonce-file <NONCE_FILE>        nonce from file
-      --stdout                         print results to stdout
-  -h, --help                           print help
-  -V, --version                        print version
+  -e, --encrypt                    encrypt
+  -d, --decrypt                    decrypt
+  -i, --input-file <INPUT_FILE>    set input file
+  -o, --output-file <OUTPUT_FILE>  set result file
+      --codes-file <CODES_FILE>    codes from file
+      --display-codes              display codes from file and exit
+      --stdout                     print result to stdout
+  -l, --license                    display license and exit
+  -h, --help                       Print help
+  -V, --version                    Print version
 ```
 
 for example:
@@ -62,5 +63,4 @@ community I will assume that everything is fine.
 
 ## license
 
-Read [LICENSE](/LICENSE) file for more information (contact me for
-commercial license).
+Read [LICENSE](/LICENSE) file for more information.
