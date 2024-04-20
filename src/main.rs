@@ -424,7 +424,7 @@ fn decrypt_file(input_file: String, output_file: String, password: &str, nonce: 
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
+    use std::{fs, sync::Arc};
     use super::*;
 
     #[test]
@@ -513,8 +513,29 @@ mod tests {
         // Clean up the test input and output files
         fs::remove_file(&input_file).unwrap();
         fs::remove_file(&output_file).unwrap();
-        fs::remove_file(&format!("{}.nonce", output_file)).unwrap();
-        fs::remove_file(&format!("{}.key", output_file)).unwrap();
+        // find file with codes, it has .codes extension
+        let now = SystemTime::now();
+        let codes_file = fs::read_dir(".").unwrap();
+        for file in codes_file {
+            let file = file.unwrap();
+            let file_name = file.file_name();
+            let file_name = file_name.to_str().unwrap();
+            if file_name.ends_with(".codes") {
+                let unix_timestamp = now.duration_since(UNIX_EPOCH).expect("Time went backwards").as_secs() - 30;
+                // create unix timestamp from file_name without .codes extension
+                let file_name_path = file_name.to_string();
+                let file_name = file_name.replace(".codes", "");
+                let file_name = file_name.parse::<u64>().unwrap();
+                if file_name > unix_timestamp {
+                    fs::remove_file(file_name_path).unwrap();
+                }
+                else {
+                    panic!("❌ .codes file timestamp is older than 30 seconds. It should be removed after 30 seconds. Check if you have correct system")
+                }
+            }
+        }
+        // fs::remove_file(&format!("{}.nonce", output_file)).unwrap();
+        // fs::remove_file(&format!("{}.key", output_file)).unwrap();
     }
 
     #[test]
