@@ -37,3 +37,12 @@ jobs:
           RUSTTARGET: ${{ matrix.target }}
           ARCHIVE_TYPES: ${{ matrix.archive }}
           EXTRA_FILES: "README.md LICENSE ${{ steps.compile.outputs.BUILT_CHECKSUM }}"
+      - name: Upload release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        with:
+          upload_url: ${{ steps.release.outputs.upload_url }}
+          asset_path: ${{ steps.compile.outputs.ARCHIVE_PATH }}
+          asset_name: ${{ steps.compile.outputs.ARCHIVE_NAME }}
+          asset_content_type: application/zip
