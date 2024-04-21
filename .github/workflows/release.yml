@@ -19,7 +19,9 @@ jobs:
           - target: x86_64-apple-darwin
             archive: zip
     steps:
-      - uses: actions/create-release@v1
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
@@ -30,19 +32,12 @@ jobs:
           body: "Release notes..."  # Optional release description
       - uses: actions/checkout@master
       - name: Compile and release
+        id: compile
         uses: rust-build/rust-build.action@v1.4.3
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
         with:
           RUSTTARGET: ${{ matrix.target }}
           ARCHIVE_TYPES: ${{ matrix.archive }}
           EXTRA_FILES: "README.md LICENSE ${{ steps.compile.outputs.BUILT_CHECKSUM }}"
-      - name: Upload release asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        with:
-          upload_url: ${{ steps.release.outputs.upload_url }}
-          asset_path: ${{ steps.compile.outputs.ARCHIVE_PATH }}
-          asset_name: ${{ steps.compile.outputs.ARCHIVE_NAME }}
-          asset_content_type: application/zip
