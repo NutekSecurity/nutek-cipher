@@ -19,25 +19,78 @@ jobs:
           - target: x86_64-apple-darwin
             archive: zip
     steps:
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }} # This token is provided by Actions, you do not need to create your own token
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}  # Or a custom release name
-          draft: true            # Set to true for draft releases
-          prerelease: false          # Set to true for draft releases
-          body: "Release notes..."  # Optional release description
       - uses: actions/checkout@master
-      - name: Compile and release
-        id: compile
+      
+      - name: Build
+        run: cargo build --verbose
+      - name: Run tests
+        run: cargo test --verbose
+
+      - name: Compile
+        id: compile-windows
         uses: rust-build/rust-build.action@v1.4.3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
         with:
-          RUSTTARGET: ${{ matrix.target }}
-          ARCHIVE_TYPES: ${{ matrix.archive }}
-          EXTRA_FILES: "README.md LICENSE ${{ steps.compile.outputs.BUILT_CHECKSUM }}"
+          RUSTTARGET: x86_64-pc-windows-gnu
+          UPLOAD_MODE: none
+          ARCHIVE_TYPES: zip
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: Binary
+          path: |
+            ${{ steps.compile.outputs.BUILT_ARCHIVE }}
+            ${{ steps.compile.outputs.BUILT_CHECKSUM }}
+            
+      - name: Compile
+        id: compile-linux
+        uses: rust-build/rust-build.action@v1.4.3
+        with:
+          RUSTTARGET: x86_64-unknown-linux-musl
+          UPLOAD_MODE: none
+          ARCHIVE_TYPES: tar.gz tar.xz tar.zst
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: Binary
+          path: |
+            ${{ steps.compile2.outputs.BUILT_ARCHIVE }}
+            ${{ steps.compile2.outputs.BUILT_CHECKSUM }}
+
+      - name: Compile
+        id: compile-macos
+        uses: rust-build/rust-build.action@v1.4.3
+        with:
+          RUSTTARGET: x86_64-apple-darwin
+          UPLOAD_MODE: none
+          ARCHIVE_TYPES: zip
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: Binary
+          path: |
+            ${{ steps.compile3.outputs.BUILT_ARCHIVE }}
+            ${{ steps.compile3.outputs.BUILT_CHECKSUM }}
+
+      - name: Download files
+        run: |
+          wget https://storage.googleapis.com/nuteksecurity-public/NutekCipherMacOS.zip -O NutekCipherMacOS.zip
+          wget https://storage.googleapis.com/nuteksecurity-public/NutekCipherMacOS.zip.sha265 -O NutekCipherMacOS.zip.sha265
+          # Add more wget commands for more files
+
+      - name: Release
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GH_TOKEN }}"
+          draft: true
+          automatic_release_tag: "latest"
+          prerelease: false
+          title: "CLI for your Shadow..."
+          files: |
+            NutekCipherMacOS.zip
+            NutekCipherMacOS.zip.sha265
+            ${{ steps.compile-windows.outputs.BUILT_ARCHIVE }}
+            ${{ steps.compile-windows.outputs.BUILT_CHECKSUM }}
+            ${{ steps.compile-linux.outputs.BUILT_ARCHIVE }}
+            ${{ steps.compile-linux.outputs.BUILT_CHECKSUM }}
+            ${{ steps.compile-macos.outputs.BUILT_ARCHIVE }}
+            ${{ steps.compile-macos.outputs.BUILT_CHECKSUM }}
