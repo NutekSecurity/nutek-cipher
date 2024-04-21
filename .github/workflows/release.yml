@@ -11,10 +11,13 @@ jobs:
     steps:
       - uses: actions/checkout@master
       
-      - name: Build
-        run: cargo build --verbose
+      # - name: Build
+      #   run: cargo build --verbose
       - name: Run tests
         run: cargo test --verbose
+
+      - name: Set permissions
+        run: mkdir output && chmod -R 777 output
 
       - name: Compile Windows
         id: compile-windows
@@ -24,6 +27,10 @@ jobs:
           UPLOAD_MODE: none
           ARCHIVE_TYPES: zip
 
+      - name: Checksum windows
+        run: |
+          sha256sum ${{ steps.compile-windows.outputs.BUILT_ARCHIVE }} > ${{ steps.compile-windows.outputs.BUILT_ARCHIVE }}.sha256
+
       - name: Compile Linux
         id: compile-linux
         uses: rust-build/rust-build.action@v1.4.3
@@ -32,6 +39,10 @@ jobs:
           UPLOAD_MODE: none
           ARCHIVE_TYPES: tar.gz tar.xz tar.zst
 
+      - name: Checksum linux
+        run: |
+          sha256sum ${{ steps.compile-linux.outputs.BUILT_ARCHIVE }} > ${{ steps.compile-linux.outputs.BUILT_ARCHIVE }}.sha256
+  
       - name: Compile MacOS
         id: compile-macos
         uses: rust-build/rust-build.action@v1.4.3
@@ -40,21 +51,16 @@ jobs:
           UPLOAD_MODE: none
           ARCHIVE_TYPES: zip
 
+      - name: Checksum macos
+        run: |
+          sha256sum ${{ steps.compile-macos.outputs.BUILT_ARCHIVE }} > ${{ steps.compile-macos.outputs.BUILT_ARCHIVE }}.sha256
+          # Add more checksum commands for more files
+  
       - name: Download files
         run: |
           wget https://storage.googleapis.com/nuteksecurity-public/NutekCipherMacOS.zip -O NutekCipherMacOS.zip
           wget https://storage.googleapis.com/nuteksecurity-public/NutekCipherMacOS.zip.sha265 -O NutekCipherMacOS.zip.sha265
           # Add more wget commands for more files
-
-      - name: Set permissions
-        run: chmod -R 777 output
-
-      - name: Checksum
-        run: |
-          sha256sum ${{ steps.compile-windows.outputs.BUILT_ARCHIVE }} > ${{ steps.compile-windows.outputs.BUILT_ARCHIVE }}.sha256
-          sha256sum ${{ steps.compile-linux.outputs.BUILT_ARCHIVE }} > ${{ steps.compile-linux.outputs.BUILT_ARCHIVE }}.sha256
-          sha256sum ${{ steps.compile-macos.outputs.BUILT_ARCHIVE }} > ${{ steps.compile-macos.outputs.BUILT_ARCHIVE }}.sha256
-          # Add more checksum commands for more files
 
       - name: Release
         uses: "marvinpinto/action-automatic-releases@latest"
