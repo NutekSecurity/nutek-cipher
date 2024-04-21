@@ -19,17 +19,15 @@ jobs:
           - target: x86_64-apple-darwin
             archive: zip
     steps:
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
+      - uses: actions/create-release@v1
         env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
           tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
-          body: "Release notes..."  # Optional release description
-          draft: true
+          release_name: ${{ github.ref }}  # Or a custom release name
+          draft: true            # Set to true for draft releases
           prerelease: false          # Set to true for draft releases
+          body: "Release notes..."  # Optional release description
       - uses: actions/checkout@master
       - name: Compile and release
         uses: rust-build/rust-build.action@v1.4.5
