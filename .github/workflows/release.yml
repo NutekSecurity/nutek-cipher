@@ -46,6 +46,9 @@ jobs:
           wget https://storage.googleapis.com/nuteksecurity-public/NutekCipherMacOS.zip.sha265 -O NutekCipherMacOS.zip.sha265
           # Add more wget commands for more files
 
+      - name: Set permissions
+        run: chmod -R 777 output
+
       - name: Checksum
         run: |
           sha256sum ${{ steps.compile-windows.outputs.BUILT_ARCHIVE }} > ${{ steps.compile-windows.outputs.BUILT_ARCHIVE }}.sha256
