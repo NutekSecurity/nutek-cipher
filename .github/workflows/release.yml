@@ -1,8 +1,8 @@
 name: Release with Artifacts
 
 on:
-  push:
-    tags: [ "v*.*.*" ]  # Trigger on tag pushes (adjust the pattern as needed)
+  push: 
+    #tags: [ "v*.*.*" ]  # Trigger on tag pushes (adjust the pattern as needed)
 
 jobs:
   release:
@@ -30,18 +30,10 @@ jobs:
           body: "Release notes..."  # Optional release description
       - uses: actions/checkout@master
       - name: Compile and release
-        uses: rust-build/rust-build.action@v1.4.5
+        uses: rust-build/rust-build.action@v1.4.3
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           RUSTTARGET: ${{ matrix.target }}
           ARCHIVE_TYPES: ${{ matrix.archive }}
-          EXTRA_FILES: "README.md LICENSE"
-          UPLOAD_MODE: none
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Binary
-          path: |
-            ${{ steps.compile.outputs.BUILT_ARCHIVE }}
-            ${{ steps.compile.outputs.BUILT_CHECKSUM }}
+          EXTRA_FILES: "README.md LICENSE ${{ steps.compile.outputs.BUILT_CHECKSUM }}"
