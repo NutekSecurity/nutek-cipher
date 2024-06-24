@@ -68,9 +68,12 @@ jobs:
 
       - name: remove artifacts from sha256sum
         run: |
-          sed 's/output\///g' windows.sha256 > "${{ steps.compile-windows.outputs.BUILT_ARCHIVE }}.sha256"
-          sed 's/output\///g' linux.sha256 > "${{ steps.compile-linux.outputs.BUILT_ARCHIVE }}.sha256"
-          sed 's/output\///g' macos.sha256  > "${{ steps.compile-macos.outputs.BUILT_ARCHIVE }}.sha256"
+          BASE_NAME=${{ steps.compile-windows.outputs.BUILT_ARCHIVE }}
+          sed 's/output\///g' windows.sha256 > "${BASE_NAME##*/}.sha256"
+          BASE_NAME=${{ steps.compile-linux.outputs.BUILT_ARCHIVE }}
+          sed 's/output\///g' linux.sha256 > "${BASE_NAME##*/}.sha256"
+          BASE_NAME=${{ steps.compile-macos.outputs.BUILT_ARCHIVE }}
+          sed 's/output\///g' macos.sha256  > "${BASE_NAME##*/}.sha256"
 
       - name: Release
         uses: "marvinpinto/action-automatic-releases@latest"
