@@ -46,6 +46,12 @@ jobs:
           wget https://storage.googleapis.com/nuteksecurity-public/NutekCipherMacOS.zip.sha256 -O NutekCipherMacOS.zip.sha256
           # Add more wget commands for more files
 
+      - name: Remove string "output/" from sha256sum
+        run: |
+          sed -i 's/output\///g' ${{ steps.compile-windows.outputs.BUILT_CHECKSUM }}
+          sed -i 's/output\///g' ${{ steps.compile-linux.outputs.BUILT_CHECKSUM }}
+          sed -i 's/output\///g' ${{ steps.compile-macos.outputs.BUILT_CHECKSUM }}
+
       - name: Release
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
@@ -53,7 +59,7 @@ jobs:
           draft: true
           automatic_release_tag: "latest"
           prerelease: false
-          title: "CLI for your Shadow..."
+          title: "CLI for your Shadowheart"
           files: |
             NutekCipherMacOS.zip
             NutekCipherMacOS.zip.sha256
