@@ -1,16 +1,17 @@
 name: Release with Artifacts
 
 on:
-  push: 
-    tags: [ "v*.*.*" ]  # Trigger on tag pushes (adjust the pattern as needed)
+  push:
+    tags: ["v*.*.*"] # Trigger on tag pushes (adjust the pattern as needed)
 
 jobs:
   release:
     name: release
     runs-on: ubuntu-latest
+    permissions: write-all
     steps:
       - uses: actions/checkout@master
-      
+
       - name: Build
         run: cargo build --verbose
       - name: Run tests
