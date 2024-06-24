@@ -93,6 +93,6 @@ jobs:
             ${{ steps.compile-windows.outputs.BUILT_ARCHIVE }}
             ${{ steps.compile-linux.outputs.BUILT_ARCHIVE }}
             ${{ steps.compile-macos.outputs.BUILT_ARCHIVE }}
-            ${{ steps.sha.env.WINDOWS_SHA }}
-            ${{ steps.sha.env.LINUX_SHA }}
-            ${{ steps.sha.env.MACOS_SHA }}
+            nutek-cipher_null_x86_64-apple-darwin.zip.sha256
+            nutek-cipher_null_x86_64-pc-windows-gnu.zip.sha256
+            nutek-cipher_null_x86_64-unknown-linux-musl.tar.gz.sha256
