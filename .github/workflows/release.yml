@@ -8,7 +8,8 @@ jobs:
   release:
     name: release
     runs-on: ubuntu-latest
-    permissions: write-all
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@master
 
@@ -25,6 +26,12 @@ jobs:
           UPLOAD_MODE: none
           ARCHIVE_TYPES: zip
 
+      - name: copy checksum
+        uses: canastro/copy-file-action@master
+        with:
+          source: ${{ steps.compile-windows.outputs.BUILT_CHECKSUM }}
+          target: "windows.sha256"
+
       - name: Compile Linux
         id: compile-linux
         uses: rust-build/rust-build.action@v1.4.3
@@ -32,6 +39,12 @@ jobs:
           RUSTTARGET: x86_64-unknown-linux-musl
           UPLOAD_MODE: none
           ARCHIVE_TYPES: tar.gz
+
+      - name: copy checksum
+        uses: canastro/copy-file-action@master
+        with:
+          source: ${{ steps.compile-linux.outputs.BUILT_CHECKSUM }}
+          target: "linux.sha256"
 
       - name: Compile MacOS
         id: compile-macos
@@ -41,17 +54,23 @@ jobs:
           UPLOAD_MODE: none
           ARCHIVE_TYPES: zip
 
+      - name: copy checksum
+        uses: canastro/copy-file-action@master
+        with:
+          source: ${{ steps.compile-macos.outputs.BUILT_CHECKSUM }}
+          target: "macos.sha256"
+
       - name: Download files
         run: |
           wget https://storage.googleapis.com/nuteksecurity-public/NutekCipherMacOS.zip -O NutekCipherMacOS.zip
           wget https://storage.googleapis.com/nuteksecurity-public/NutekCipherMacOS.zip.sha256 -O NutekCipherMacOS.zip.sha256
           # Add more wget commands for more files
 
-      - name: Remove string "output/" from sha256sum
+      - name: remove artifacts from sha256sum
         run: |
-          sed -i 's/output\///g' ${{ steps.compile-windows.outputs.BUILT_CHECKSUM }}
-          sed -i 's/output\///g' ${{ steps.compile-linux.outputs.BUILT_CHECKSUM }}
-          sed -i 's/output\///g' ${{ steps.compile-macos.outputs.BUILT_CHECKSUM }}
+          sed 's/output\///g' windows.sha256 > "${{ steps.compile-windows.outputs.BUILT_ARCHIVE }}.sha256"
+          sed 's/output\///g' linux.sha256 > "${{ steps.compile-linux.outputs.BUILT_ARCHIVE }}.sha256"
+          sed 's/output\///g' macos.sha256  > "${{ steps.compile-macos.outputs.BUILT_ARCHIVE }}.sha256"
 
       - name: Release
         uses: "marvinpinto/action-automatic-releases@latest"
@@ -65,8 +84,8 @@ jobs:
             NutekCipherMacOS.zip
             NutekCipherMacOS.zip.sha256
             ${{ steps.compile-windows.outputs.BUILT_ARCHIVE }}
-            ${{ steps.compile-windows.outputs.BUILT_CHECKSUM }}
             ${{ steps.compile-linux.outputs.BUILT_ARCHIVE }}
-            ${{ steps.compile-linux.outputs.BUILT_CHECKSUM }}
             ${{ steps.compile-macos.outputs.BUILT_ARCHIVE }}
-            ${{ steps.compile-macos.outputs.BUILT_CHECKSUM }}
+            "${{ steps.compile-windows.outputs.BUILT_ARCHIVE }}.sha256"
+            "${{ steps.compile-linux.outputs.BUILT_ARCHIVE }}.sha256"
+            "${{ steps.compile-macos.outputs.BUILT_ARCHIVE }}.sha256"
