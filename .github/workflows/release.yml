@@ -67,13 +67,17 @@ jobs:
           # Add more wget commands for more files
 
       - name: remove artifacts from sha256sum
+        id: sha
         run: |
           BASE_NAME=${{ steps.compile-windows.outputs.BUILT_ARCHIVE }}
           sed 's/output\///g' windows.sha256 > "${BASE_NAME##*/}.sha256"
+          export WINDOWS_SHA="${BASE_NAME##*/}.sha256"
           BASE_NAME=${{ steps.compile-linux.outputs.BUILT_ARCHIVE }}
           sed 's/output\///g' linux.sha256 > "${BASE_NAME##*/}.sha256"
+          export LINUX_SHA="${BASE_NAME##*/}.sha256"
           BASE_NAME=${{ steps.compile-macos.outputs.BUILT_ARCHIVE }}
           sed 's/output\///g' macos.sha256  > "${BASE_NAME##*/}.sha256"
+          export MACOS_SHA="${BASE_NAME##*/}.sha256"
 
       - name: Release
         uses: "marvinpinto/action-automatic-releases@latest"
@@ -89,6 +93,6 @@ jobs:
             ${{ steps.compile-windows.outputs.BUILT_ARCHIVE }}
             ${{ steps.compile-linux.outputs.BUILT_ARCHIVE }}
             ${{ steps.compile-macos.outputs.BUILT_ARCHIVE }}
-            "${{ steps.compile-windows.outputs.BUILT_ARCHIVE }}.sha256"
-            "${{ steps.compile-linux.outputs.BUILT_ARCHIVE }}.sha256"
-            "${{ steps.compile-macos.outputs.BUILT_ARCHIVE }}.sha256"
+            ${{ steps.sha.env.WINDOWS_SHA }}
+            ${{ steps.sha.env.LINUX_SHA }}
+            ${{ steps.sha.env.MACOS_SHA }}
