@@ -1,26 +1,29 @@
 extern crate aes_gcm_siv;
-use std::fs::File;
-use std::io::{self, BufReader, BufWriter, Read, Write, BufRead};
-use std::process::exit;
 use aes_gcm_siv::aead::consts::U12;
+
 use aes_gcm_siv::aead::generic_array::GenericArray;
 use clap::Parser;
+use rand::Rng;
+use std::fs::File;
+use std::io::{self, BufRead, BufReader, BufWriter, Read, Write};
+use std::process::exit;
 mod cli;
 use aes_gcm_siv::{
     aead::{Aead, KeyInit},
-    Aes256GcmSiv, Nonce, Key  // Or `Aes128GcmSiv`
+    Aes256GcmSiv,
+    Key, // Or `Aes128GcmSiv`
+    Nonce,
 };
-use rand::Rng;
-
-use text_io::read;
+use std::env;
 use std::time::{SystemTime, UNIX_EPOCH};
-
+use text_io::read;
 
 fn decrypt(key_slice: &[u8], nonce_slice: &[u8], ciphertext: Vec<u8>) -> Option<Vec<u8>> {
     let key = Key::<Aes256GcmSiv>::from_slice(key_slice);
     let cipher = Aes256GcmSiv::new(&key);
     let nonce: &GenericArray<u8, U12> = Nonce::from_slice(nonce_slice);
     let plaintext = cipher.decrypt(nonce, ciphertext.as_ref()).ok()?;
+    println!("Successfuly decrypted ciphertext");
     Some(plaintext)
 }
 
@@ -34,6 +37,7 @@ fn encrypt(plaintext: &[u8], nonce_slice: &[u8], key_slice: &[u8]) -> Vec<u8> {
     } else if ciphertext.len() > aes_gcm_siv::C_MAX.try_into().unwrap() {
         println!("❌ Ciphertext is too long");
     }
+    println!("Successfuly encrypted plaintext");
     ciphertext
 }
 
@@ -42,45 +46,130 @@ fn key_and_nonce_warning() {
     // responsible for keeping them safe and not losing them
     // because they are not stored anywhere and not recoverable
     // also needed to decrypt the data
-    println!("💥❗️  WARNING: You are responsible for keeping your 🔑 key and 🔑 nonce safe and not losing them. They are not stored anywhere and not recoverable. You will need them to decrypt your data.");
+    println!("💥❗️  WARNING: You are responsible for keeping your 🔑 key and 🔑 nonce safe and not losing them. They are not stored anywhere and not recoverable. You will need them to decrypt your data.\nUse --save-codes to save codes to ONE file! distribute them as you wish...");
 }
 
 fn virtual_money() {
-    println!("\nFor future development and security awarness help me with Monero:");
-    println!("Monero address: 87G8nLBPdwAEPycmWWAhUhZC8kUuuFgjX8zEUw1VjvNMPdkUWzxikocQyLtycwqzJfChR5bNVyXU87m5vT4Fy9gtS6Q5X8L");
-    println!("or Bitcoin:");
-    println!("Bitcoin address: 3AhSZUecGQDk97iCGtUtCq3kqCdndsZEF1");
+    println!("\nThank you for using nutek-cipher 🔐 - safe encryption for your daily use");
 }
 
 fn nuteksecurity_address() {
     println!("\nhttps://nuteksecurity.com");
+    println!("neosb@nuteksecurity.com");
 }
 
-fn license_text() {
-    // string with license text displayed as is
-    let license_text = r#"LICENSE
+fn save_codes_file(password: String, nonce: String, test: bool) -> String {
+    // save key and nonce to file in format
+    // key=12345678123456781234567812345678
+    // nonce=123456123456
+    // with name  as UNIX timestamp
+    let now = SystemTime::now();
+    let home_dir = env::var("HOME").unwrap_or_else(|_| {
+        println!("'HOME' environment variable not found.");
+        String::new()
+    });
+    let mut codes_file = format!(
+        "{}/Downloads/{}.codes",
+        home_dir,
+        now.duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_secs()
+    );
+    if test {
+        codes_file = format!(
+            "{}.codes",
+            now.duration_since(UNIX_EPOCH)
+                .expect("Time went backwards")
+                .as_secs()
+        );
+    }
+    let mut codes_file_buf = BufWriter::new(File::create(&codes_file).unwrap());
+    codes_file_buf
+        .write_all(
+            format!(
+                "key={}
+nonce={}
+",
+                password, nonce
+            )
+            .as_bytes(),
+        )
+        .unwrap();
+    println!("🔑 Written key and nonce to: {}", &codes_file);
+    return codes_file;
+}
 
-The user is granted a non-exclusive, perpetual license to use,
-and distribute the software, subject to the following terms:
-The user must display the following copyright notice in all copies of the
-software:
+fn sum_codes_to_file(sum_codes: String, test: bool) -> String {
+    let mut sum_array = sum_codes.split(":").into_iter();
 
-Copyright (c) 2024 Szymon Błaszczyński
+    let key_path = sum_array.next().unwrap().to_owned();
+    let nonce_path = sum_array.next().unwrap().to_owned();
 
-The user is not permitted to sublicense the software.
-The user is not permitted to sell the software.
+    let mut key = String::new();
+    let file = File::open(key_path).expect("Failed to open key file");
+    let mut reader = BufReader::new(file);
+    reader.read_line(&mut key).unwrap();
+    if key.starts_with("key=") {
+        let shorter = key[4..].to_string();
+        key = shorter;
+    }
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+    let mut nonce = String::new();
+    let file = File::open(nonce_path).expect("Failed to open nonce file");
+    let mut reader = BufReader::new(file);
+    reader.read_line(&mut nonce).unwrap();
+    if key.starts_with("nonce=") {
+        let shorter = key[6..].to_string();
+        nonce = shorter;
+    }
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE."#;
-    println!("{}", license_text);
+    assert_eq!(key.len(), 32, "❌ Key must be 32 characters long");
+    assert_eq!(nonce.len(), 12, "❌ Nonce must be 12 characters long");
+    // save key and nonce to file in format
+    // key=12345678123456781234567812345678
+    // nonce=123456123456
+    // with name  as UNIX timestamp
+    let now = SystemTime::now();
+    let home_dir = env::var("HOME").unwrap_or_else(|_| {
+        println!("'HOME' environment variable not found.");
+        String::new()
+    });
+    let mut codes_file = format!(
+        "{}/Downloads/{}.codes",
+        home_dir,
+        now.duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_secs()
+    );
+    if test {
+        codes_file = format!(
+            "{}.codes",
+            now.duration_since(UNIX_EPOCH)
+                .expect("Time went backwards")
+                .as_secs()
+        );
+    }
+    let mut codes_file_buf = BufWriter::new(File::create(&codes_file).unwrap());
+    codes_file_buf
+        .write_all(
+            format!(
+                "key={}
+nonce={}
+",
+                key, nonce
+            )
+            .as_bytes(),
+        )
+        .unwrap();
+    println!(
+        "✅ Written new codes file from provided paths to key and nonce into {}. Exiting...",
+        &codes_file
+    );
+    if !test {
+        exit(0)
+    } else {
+        return codes_file;
+    }
 }
 
 fn main() {
@@ -88,11 +177,6 @@ fn main() {
 
     let cli = cli::Cli::parse();
 
-    if cli.license {
-        license_text();
-        exit(0);
-    }
-    
     let stdin = io::stdin();
     let handle = stdin.lock();
     let lines = handle.lines();
@@ -102,11 +186,17 @@ fn main() {
 
     let mut key = String::new();
     let mut nonce = String::new();
+
+    if let Some(sum_codes) = cli.sum_codes {
+        sum_codes_to_file(sum_codes, false);
+    }
+
     let codes_file = cli.codes_file.unwrap_or("".to_string());
     if codes_file != "" {
         let mut file = File::open(codes_file).expect("❌ can't open codes file");
         let mut codes = String::new();
-        file.read_to_string(&mut codes).expect("❌ can't read codes file");
+        file.read_to_string(&mut codes)
+            .expect("❌ can't read codes file");
         codes = codes.trim().to_string();
         let codes = codes.split("\n");
         for code in codes {
@@ -126,34 +216,31 @@ fn main() {
     if cli.display_codes {
         println!("🔑 Key: {}", key);
         println!("🔑 Nonce: {}", nonce);
-        exit(0);
+        exit(0)
+    }
+
+    if cli.random_codes {
+        key = rand::thread_rng()
+            .sample_iter(&rand::distributions::Alphanumeric)
+            .take(32)
+            .map(char::from)
+            .collect();
+        nonce = rand::thread_rng()
+            .sample_iter(&rand::distributions::Alphanumeric)
+            .take(12)
+            .map(char::from)
+            .collect();
     }
 
     if key != "" && nonce != "" {
         assert_eq!(key.len(), 32, "❌ Key must be 32 characters long");
         assert_eq!(nonce.len(), 12, "❌ Nonce must be 12 characters long");
     } else {
-        key = rpassword::prompt_password("🔑 Your key [32 characters] - to skip press [Enter↩]: ").unwrap();
-        let key_replay = rpassword::prompt_password("🔑 Confirm your key - to skip press [Enter↩]: ").unwrap();
-        if key != key_replay {
-            println!("❌ Keys don't match");
-            exit(1);
-        }
-        nonce = rpassword::prompt_password("🔑 Your nonce [12 characters] - to skip press [Enter↩]: ").unwrap();
-        let nonce_replay = rpassword::prompt_password("🔑 Confirm your nonce - to skip press [Enter↩]: ").unwrap();
-        if nonce != nonce_replay {
-            println!("❌ Nonces don't match");
-            exit(1);
-        }
+        key = rpassword::prompt_password("🔑 Your key [32 characters]: ").unwrap();
+        nonce = rpassword::prompt_password("🔑 Your nonce [12 characters]: ").unwrap();
     }
-    if key == "" {
-        key = rand::thread_rng().sample_iter(&rand::distributions::Alphanumeric).take(32).map(char::from).collect();
-    }
+
     assert_eq!(key.len(), 32, "❌ Key must be 32 characters long");
-    
-    if nonce == "" {
-        nonce = rand::thread_rng().sample_iter(&rand::distributions::Alphanumeric).take(12).map(char::from).collect();
-    }
     assert_eq!(nonce.len(), 12, "❌ Nonce must be 12 characters long");
 
     let stdout = cli.stdout;
@@ -161,110 +248,150 @@ fn main() {
     let input_file = cli.input_file.unwrap_or("".to_string());
 
     let output_file = cli.output_file.unwrap_or("".to_string());
-    
 
     // if lines.peek().is_some() {
-        println!("📝 Processing input from user...");
-        if input_file != "" {
-            println!("📝 Input file: {}", input_file);
-            if stdout || output_file != "" {
-                if cli.encrypt == true {
-                    println!("🔐 Encrypting file mode on... Proceeding...");
-                        encrypt_file(input_file, output_file, &key, &nonce, stdout).expect("can't encrypt");
-                    key_and_nonce_warning();
-                    virtual_money();
-                    nuteksecurity_address();
-                } else if cli.decrypt == true {
-                    println!("🔓 Decrypting file mode on... Proceeding...");
-                    
-                        decrypt_file(input_file, output_file, &key, &nonce, stdout).expect("can't decrypt");
-                    
-                    virtual_money();
-                    nuteksecurity_address();
-                } else {
-                    println!("❌ Invalid mode. Must be --encrypt or --decrypt");
-                }
-            } else {
-                println!("❌ I must have either --output or --stdout");
-            }
-            exit(0);
-        }
+    println!("📝 Processing input from user...");
+    if input_file != "" {
+        println!("📝 Input file: {}", input_file);
         if stdout || output_file != "" {
             if cli.encrypt == true {
-                println!("🔐 Encrypting from pipe - use cat, echo, etc... CTRL+D (Unix) & CTRL+Z (Windows) to proceed with text when no pipe is provided...");
-                let mut stdin = String::new();
-
-                for line in lines {
-                    if stdin != "" {
-                        stdin = format!("{}\n{}", stdin, line);
-                    } else {
-                        if line == "" {
-                            println!("❌ No input");
-                            exit(1);
-                        }
-                        stdin = format!("{}", line);
-                    }
-                }
-
-                // convert to UTF-8
-                if stdin == "" {
-                    println!("❌ No input");
-                    let line: String = read!("{}");
-                    exit(1);
-                }
-                if stdin.len() > aes_gcm_siv::P_MAX.try_into().unwrap() {
-                    println!("❌ Input is too long. Maximum is {} characters", aes_gcm_siv::P_MAX);
-                    return;
-                }
-                println!("📝 Successfully read {} characters from stdin... Continuing...", stdin.len());
-                
-                    encrypt_stdin(stdin, output_file, stdout, &key, &nonce).expect("can't encrypt");
-                
+                println!("🔐 Encrypting file mode on... Proceeding...");
+                encrypt_file(
+                    input_file,
+                    output_file,
+                    &key,
+                    &nonce,
+                    stdout,
+                    cli.save_codes,
+                    false,
+                )
+                .expect("can't encrypt");
+                // if cli.save_codes {
+                //     save_codes_file(key, nonce)
+                // }
                 key_and_nonce_warning();
                 virtual_money();
                 nuteksecurity_address();
             } else if cli.decrypt == true {
-                println!("🔐 Decrypting stdin mode on... Proceeding...");
-                let mut stdin = String::new();
-                for line in lines {
-                    if stdin != "" {
-                        stdin = format!("{}\n{}", stdin, line);
-                    } else {
-                        if line == "" {
-                            println!("❌ No input");
-                            exit(1);
-                        }
-                        stdin = format!("{}", line);
-                    }
-                }
-                if stdin == "" {
-                    println!("❌ No input");
-                    exit(1);
-                }
-                if stdin.len() > aes_gcm_siv::C_MAX.try_into().unwrap() {
-                    println!("❌ Input is too long. Maximum is {} characters", aes_gcm_siv::C_MAX);
-                    return;
-                }
-                println!("📝 Successfully read {} characters from stdin... Continuing...", stdin.len());
-                
-                    decrypt_stdin(stdin, output_file, stdout, &key, &nonce).expect("can't decrypt");
-                
+                println!("🔓 Decrypting file mode on... Proceeding...");
+
+                decrypt_file(input_file, output_file, &key, &nonce, stdout).expect("can't decrypt");
+
                 virtual_money();
                 nuteksecurity_address();
             } else {
                 println!("❌ Invalid mode. Must be --encrypt or --decrypt");
             }
         } else {
-            println!("❌ I must have either --output-file or --stdout");
+            println!("❌ I must have either --output or --stdout");
         }
+        exit(0);
+    }
+    if stdout || output_file != "" {
+        if cli.encrypt == true {
+            println!("🔐 Encrypting from pipe - use cat, echo, etc... [⏎ Enter] & CTRL+D (Unix) & [⏎ Enter] CTRL+Z (Windows) to continue with text you input below...");
+            let mut stdin = String::new();
+
+            for line in lines {
+                if stdin != "" {
+                    stdin = format!("{}\n{}", stdin, line);
+                } else {
+                    if line == "" {
+                        println!("❌ No input");
+                        exit(1);
+                    }
+                    stdin = format!("{}", line);
+                }
+            }
+
+            // convert to UTF-8
+            if stdin == "" {
+                println!("❌ No input");
+                let _line: String = read!("{}");
+                exit(1);
+            }
+            if stdin.len() > aes_gcm_siv::P_MAX.try_into().unwrap() {
+                println!(
+                    "❌ Input is too long. Maximum is {} characters",
+                    aes_gcm_siv::P_MAX
+                );
+                return;
+            }
+            println!(
+                "📝 Successfully read {} characters from stdin... Continuing with encryption...",
+                stdin.len()
+            );
+
+            encrypt_stdin(
+                stdin,
+                output_file,
+                stdout,
+                &key,
+                &nonce,
+                cli.save_codes,
+                false,
+            )
+            .expect("can't encrypt");
+            // if cli.save_codes {
+            //     save_codes_file(key, nonce)
+            // }
+            key_and_nonce_warning();
+            virtual_money();
+            nuteksecurity_address();
+        } else if cli.decrypt == true {
+            println!("🔐 Decrypting stdin mode on... Proceeding...");
+            let mut stdin = String::new();
+            for line in lines {
+                if stdin != "" {
+                    stdin = format!("{}\n{}", stdin, line);
+                } else {
+                    if line == "" {
+                        println!("❌ No input");
+                        exit(1);
+                    }
+                    stdin = format!("{}", line);
+                }
+            }
+            if stdin == "" {
+                println!("❌ No input");
+                exit(1);
+            }
+            if stdin.len() > aes_gcm_siv::C_MAX.try_into().unwrap() {
+                println!(
+                    "❌ Input is too long. Maximum is {} characters",
+                    aes_gcm_siv::C_MAX
+                );
+                return;
+            }
+            println!(
+                "📝 Successfully read {} characters from stdin... Continuing...",
+                stdin.len()
+            );
+
+            decrypt_stdin(stdin, output_file, stdout, &key, &nonce).expect("can't decrypt");
+
+            virtual_money();
+            nuteksecurity_address();
+        } else {
+            println!("❌ Invalid mode. Must be --encrypt or --decrypt");
+        }
+    } else {
+        println!("❌ I must have either --output-file or --stdout");
+    }
     // } else {
     //     println!("❌ I must have either --input or data from pipe");
     // }
-
-        
 }
 
-fn encrypt_stdin(cleartext: String, output_file: String, stdout: bool, password: &str, nonce: &str) -> Result<(), Box<dyn std::error::Error>> {
+fn encrypt_stdin(
+    cleartext: String,
+    output_file: String,
+    stdout: bool,
+    password: &str,
+    nonce: &str,
+    should_save_codes: bool,
+    test: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
     println!("🔐 Encrypting...");
     let encrypted_content = encrypt(cleartext.as_bytes(), nonce.as_bytes(), password.as_bytes());
     println!("✅ Done!");
@@ -293,10 +420,20 @@ fn encrypt_stdin(cleartext: String, output_file: String, stdout: bool, password:
         println!("🔑 Key: \n{}", password);
     }
 
+    if should_save_codes {
+        let _ = save_codes_file(password.to_string(), nonce.to_string(), test);
+    }
+
     Ok(())
 }
 
-fn decrypt_stdin(ciphertext: String, output_file: String, stdout: bool, password: &str, nonce: &str) -> Result<(), Box<std::io::Error>> {
+fn decrypt_stdin(
+    ciphertext: String,
+    output_file: String,
+    stdout: bool,
+    password: &str,
+    nonce: &str,
+) -> Result<(), Box<std::io::Error>> {
     println!("🔓 Decrypting...");
     let decoded = hex::decode(ciphertext).unwrap();
     println!("✅ Done!");
@@ -309,26 +446,43 @@ fn decrypt_stdin(ciphertext: String, output_file: String, stdout: bool, password
             let file = output_file.clone();
             let mut output_file_buf = BufWriter::new(File::create(output_file)?);
             output_file_buf.write_all(&decrypted_contents)?;
-            println!("📝 Wrote decrypted content to {}", file);
+            println!("📝 Written decrypted content to {}", file);
         }
 
         if stdout {
-            println!("📝 Plaintext: \n{}", String::from_utf8_lossy(&decrypted_contents));
+            println!(
+                "📝 Plaintext: \n{}",
+                String::from_utf8_lossy(&decrypted_contents)
+            );
         }
     } else {
         println!("❌ Decryption failed. Wrong 🔑 key, 🔑 nonce or 🥷 empty?");
-        return Err::<(), Box<std::io::Error>>(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Decryption failed. Wrong key, nonce or empty?")))
+        return Err::<(), Box<std::io::Error>>(Box::new(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "Decryption failed. Wrong key, nonce or empty?",
+        )));
     }
 
     Ok(())
 }
 
-fn encrypt_file(input_file: String, output_file: String, password: &str, nonce: &str, stdout: bool) -> Result<(), Box<dyn std::error::Error>> {
+fn encrypt_file(
+    input_file: String,
+    output_file: String,
+    password: &str,
+    nonce: &str,
+    stdout: bool,
+    should_save_codes: bool,
+    test: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
     // Read the input file
     let mut input_file = BufReader::new(File::open(input_file)?);
     let mut input_contents = Vec::new();
     input_file.read_to_end(&mut input_contents)?;
-    println!("📝 Successfully read {} characters from file... Continuing...", input_contents.len());
+    println!(
+        "📝 Successfully read {} characters from file... Continuing...",
+        input_contents.len()
+    );
 
     // Encrypt the input contents
     println!("🔐 Encrypting...");
@@ -345,23 +499,8 @@ fn encrypt_file(input_file: String, output_file: String, password: &str, nonce: 
         let mut output_file_buf = BufWriter::new(File::create(output_file)?);
         output_file_buf.write_all(&encrypted_content)?;
         println!("Wrote encrypted content to: {}", file);
-
-        // save key and nonce to file in format
-        // key=12345678123456781234567812345678
-        // nonce=123456123456
-        // with name  as UNIX timestamp 
-        let now = SystemTime::now();
-        let codes_file = format!("{}.codes", now.duration_since(UNIX_EPOCH).expect("Time went backwards").as_secs());
-        let codes_file_clone = codes_file.clone();
-        let mut codes_file_buf = BufWriter::new(File::create(&codes_file)?);
-        codes_file_buf.write_all(format
-        !("
-key={}
-nonce={}
-", password, nonce).as_bytes())?;
-        println!("🔑 Wrote key and nonce to: {}", codes_file_clone);
     }
-    
+
     let encoded = hex::encode(encrypted_content);
     if stdout && encoded.len() <= 4800 {
         println!("🔐 Ciphertext: \n{}", encoded);
@@ -371,22 +510,38 @@ nonce={}
         println!("🔐 Ciphertext: \nToo long to display... {} characters; Maybe you want to write it to file? Use -o or --output", encoded.len());
         println!("🔑 Nonce: \n{}", nonce);
         println!("🔑 Key: \n{}", password);
-    } else if stdout && encoded.len() > 4800  {
-        println!("🔐 Ciphertext: \nToo long to display... {} characters;", encoded.len());
+    } else if stdout && encoded.len() > 4800 {
+        println!(
+            "🔐 Ciphertext: \nToo long to display... {} characters;",
+            encoded.len()
+        );
         println!("🔑 Nonce: \n{}", nonce);
         println!("🔑 Key: \n{}", password);
+    }
+
+    if should_save_codes {
+        let _ = save_codes_file(password.to_string(), nonce.to_string(), test);
     }
 
     Ok(())
 }
 
-fn decrypt_file(input_file: String, output_file: String, password: &str, nonce: &str, stdout: bool) -> Result<(), Box<std::io::Error>> {
+fn decrypt_file(
+    input_file: String,
+    output_file: String,
+    password: &str,
+    nonce: &str,
+    stdout: bool,
+) -> Result<(), Box<std::io::Error>> {
     // Read the encrypted file back in
     let mut encrypted_file = BufReader::new(File::open(input_file)?);
     let mut encrypted_contents = Vec::new();
     encrypted_file.read_to_end(&mut encrypted_contents)?;
-    println!("📝 Successfully read {} characters from file... Continuing...", encrypted_contents.len());
-    
+    println!(
+        "📝 Successfully read {} characters from file... Continuing...",
+        encrypted_contents.len()
+    );
+
     // Decrypt the contents
     println!("🔓 Decrypting...");
     let decrypted_content = decrypt(password.as_bytes(), nonce.as_bytes(), encrypted_contents);
@@ -401,7 +556,7 @@ fn decrypt_file(input_file: String, output_file: String, password: &str, nonce: 
             let file = output_file.clone();
             let mut output_file_buf = BufWriter::new(File::create(output_file)?);
             output_file_buf.write_all(&decrypted_content)?;
-            println!("📝 Wrote decrypted content to {}", file);
+            println!("📝 Written decrypted content to {}", file);
         }
 
         let decrypted_content = String::from_utf8_lossy(&decrypted_content);
@@ -410,27 +565,31 @@ fn decrypt_file(input_file: String, output_file: String, password: &str, nonce: 
         } else if stdout && decrypted_content.len() > 4800 && output_file_is_none == "" {
             println!("📝 Plaintext: \nToo long to display... {} characters; Maybe you want to write it to file? Use -o or --output", decrypted_content.len());
         } else if stdout && decrypted_content.len() > 4800 {
-            println!("📝 Plaintext: \nToo long to display... {} characters;", decrypted_content.len());
+            println!(
+                "📝 Plaintext: \nToo long to display... {} characters;",
+                decrypted_content.len()
+            );
         }
-
     } else {
         println!("❌ Decryption failed. Wrong 🔑 key, 🔑 nonce or 🥷 empty?");
-        return Err::<(), Box<std::io::Error>>(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Decryption failed. Wrong key, nonce or empty?")))
+        return Err::<(), Box<std::io::Error>>(Box::new(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "Decryption failed. Wrong key, nonce or empty?",
+        )));
     }
 
     Ok(())
-
 }
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, sync::Arc};
     use super::*;
+    use std::fs;
 
     #[test]
     fn test_encrypt_decrypt() {
-        let key = b"12345678123456781234567812345678";// rand::thread_rng().sample_iter(&rand::distributions::Alphanumeric).take(32).map(char::from).collect();
-        let nonce = b"123456123456";// rand::thread_rng().sample_iter(&rand::distributions::Alphanumeric).take(12).map(char::from).collect();
+        let key = b"12345678123456781234567812345678"; // rand::thread_rng().sample_iter(&rand::distributions::Alphanumeric).take(32).map(char::from).collect();
+        let nonce = b"123456123456"; // rand::thread_rng().sample_iter(&rand::distributions::Alphanumeric).take(12).map(char::from).collect();
         let plaintext = b"hello world";
 
         // let ciphertext = encrypt(key, nonce, plaintext);
@@ -449,7 +608,15 @@ mod tests {
         let nonce = "0123456789ab";
 
         let output_file_clone = output_file.clone();
-        let result = encrypt_stdin(cleartext, output_file_clone, stdout, password, nonce);
+        let result = encrypt_stdin(
+            cleartext,
+            output_file_clone,
+            stdout,
+            password,
+            nonce,
+            true,
+            true,
+        );
 
         assert!(result.is_ok());
 
@@ -465,6 +632,33 @@ mod tests {
         fs::remove_file(&output_file).unwrap();
         fs::remove_file(&format!("{}.nonce", output_file_clone)).unwrap();
         fs::remove_file(&format!("{}.key", output_file_clone)).unwrap();
+
+        let now = SystemTime::now();
+        let codes_file = fs::read_dir(".").unwrap();
+        for file in codes_file {
+            let file = file.unwrap();
+            let file_name = file.file_name();
+            let file_name = file_name.to_str().unwrap();
+            if file_name.ends_with(".codes") {
+                let unix_timestamp = now
+                    .duration_since(UNIX_EPOCH)
+                    .expect("Time went backwards")
+                    .as_secs()
+                    - 30;
+                // create unix timestamp from file_name without .codes extension
+                let file_name_path = file_name.to_string();
+                let codes_opened = fs::read_to_string(&file_name_path).unwrap();
+                assert!(codes_opened.contains(password));
+                assert!(codes_opened.contains(nonce));
+                let file_name = file_name.replace(".codes", "");
+                let file_name = file_name.parse::<u64>().unwrap();
+                if file_name > unix_timestamp {
+                    fs::remove_file(file_name_path).unwrap();
+                } else {
+                    panic!("❌ .codes file timestamp is older than 30 seconds. It should be removed after 30 seconds. Check if you have correct system")
+                }
+            }
+        }
     }
 
     #[test]
@@ -501,7 +695,15 @@ mod tests {
         fs::write(&input_file, "hello world").unwrap();
 
         // Call the encrypt_file function
-        let result = encrypt_file(input_file.clone(), output_file.clone(), password, nonce, stdout);
+        let result = encrypt_file(
+            input_file.clone(),
+            output_file.clone(),
+            password,
+            nonce,
+            stdout,
+            false,
+            true,
+        );
 
         // Check that the function completed successfully
         assert!(result.is_ok());
@@ -521,17 +723,25 @@ mod tests {
             let file_name = file.file_name();
             let file_name = file_name.to_str().unwrap();
             if file_name.ends_with(".codes") {
-                let unix_timestamp = now.duration_since(UNIX_EPOCH).expect("Time went backwards").as_secs() - 30;
+                let unix_timestamp = now
+                    .duration_since(UNIX_EPOCH)
+                    .expect("Time went backwards")
+                    .as_secs()
+                    - 30;
                 // create unix timestamp from file_name without .codes extension
                 let file_name_path = file_name.to_string();
+                let codes_opened = fs::read_to_string(&file_name_path).unwrap();
+                let is_pass = codes_opened.contains(password);
+                let is_nonce = codes_opened.contains(nonce);
                 let file_name = file_name.replace(".codes", "");
                 let file_name = file_name.parse::<u64>().unwrap();
                 if file_name > unix_timestamp {
-                    fs::remove_file(file_name_path).unwrap();
-                }
-                else {
+                    fs::remove_file(&file_name_path).unwrap();
+                } else {
                     panic!("❌ .codes file timestamp is older than 30 seconds. It should be removed after 30 seconds. Check if you have correct system")
                 }
+                assert!(is_pass);
+                assert!(is_nonce);
             }
         }
         // fs::remove_file(&format!("{}.nonce", output_file)).unwrap();
@@ -547,11 +757,21 @@ mod tests {
         let stdout = false;
 
         // Create a test input file
-        let encrypted_content = encrypt("hello world".as_bytes(), nonce.as_bytes(), password.as_bytes());
+        let encrypted_content = encrypt(
+            "hello world".as_bytes(),
+            nonce.as_bytes(),
+            password.as_bytes(),
+        );
         fs::write(&input_file, encrypted_content).unwrap();
 
         // Call the decrypt_file function
-        let result = decrypt_file(input_file.clone(), output_file.clone(), password, nonce, stdout);
+        let result = decrypt_file(
+            input_file.clone(),
+            output_file.clone(),
+            password,
+            nonce,
+            stdout,
+        );
 
         // Check that the function completed successfully
         assert!(result.is_ok());
@@ -563,5 +783,87 @@ mod tests {
         // Clean up the test input and output files
         fs::remove_file(&input_file).unwrap();
         fs::remove_file(&output_file).unwrap();
+    }
+
+    #[test]
+    fn sum_codes_to_file_with_test_mode_works() {
+        let key_path = "key_test.txt";
+        let nonce_path = "nonce_test.txt";
+
+        // Create key and nonce files
+        fs::write(key_path, "12345678123456781234567812345678").unwrap();
+        fs::write(nonce_path, "123456789012").unwrap();
+
+        sum_codes_to_file(format!("{}:{}", key_path, nonce_path), true);
+        fs::remove_file(key_path).unwrap();
+        fs::remove_file(nonce_path).unwrap();
+
+        // find file with codes, it has .codes extension
+        let now = SystemTime::now();
+        let codes_file = fs::read_dir(".").unwrap();
+        for file in codes_file {
+            let file = file.unwrap();
+            let file_name = file.file_name();
+            let file_name = file_name.to_str().unwrap();
+            if file_name.ends_with(".codes") {
+                let unix_timestamp = now
+                    .duration_since(UNIX_EPOCH)
+                    .expect("Time went backwards")
+                    .as_secs()
+                    - 30;
+                // create unix timestamp from file_name without .codes extension
+                let file_name_path = file_name.to_string();
+                let codes_opened = fs::read_to_string(&file_name_path).unwrap();
+                let is_pass = codes_opened.contains("12345678123456781234567812345678");
+                let is_nonce = codes_opened.contains("123456789012");
+                let file_name = file_name.replace(".codes", "");
+                let file_name = file_name.parse::<u64>().unwrap();
+                if file_name > unix_timestamp {
+                    fs::remove_file(&file_name_path).unwrap();
+                } else {
+                    panic!("❌ .codes file timestamp is older than 30 seconds. It should be removed after 30 seconds. Check if you have correct system")
+                }
+                assert!(is_pass);
+                assert!(is_nonce);
+            }
+        }
+    }
+
+    #[test]
+    fn save_codes_to_file_with_test_mode_works() {
+        let key = "12345678123456781234567812345678";
+        let nonce = "123456789012";
+
+        let saved_codes_file = save_codes_file(key.to_string(), nonce.to_string(), true);
+
+        // find file with codes, it has .codes extension
+        let now = SystemTime::now();
+        let codes_file = fs::read_dir(".").unwrap();
+        for file in codes_file {
+            let file = file.unwrap();
+            let file_name = file.file_name();
+            let file_name = file_name.to_str().unwrap();
+            if file_name.ends_with(".codes") {
+                let unix_timestamp = now
+                    .duration_since(UNIX_EPOCH)
+                    .expect("Time went backwards")
+                    .as_secs()
+                    - 30;
+                // create unix timestamp from file_name without .codes extension
+                let file_name_path = &saved_codes_file;
+                let codes_opened = fs::read_to_string(&file_name_path).unwrap();
+                let is_pass = codes_opened.contains("12345678123456781234567812345678");
+                let is_nonce = codes_opened.contains("123456789012");
+                let file_name = file_name.replace(".codes", "");
+                let file_name = file_name.parse::<u64>().unwrap();
+                if file_name > unix_timestamp {
+                    fs::remove_file(&file_name_path).unwrap();
+                } else {
+                    panic!("❌ .codes file timestamp is older than 30 seconds. It should be removed after 30 seconds. Check if you have correct system")
+                }
+                assert!(is_pass);
+                assert!(is_nonce);
+            }
+        }
     }
 }

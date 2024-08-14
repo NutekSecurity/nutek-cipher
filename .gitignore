@@ -1,5 +1,4 @@
 /target
-poem
-.vscode/settings.json
 .DS_Store
 .vscode
+*.codes

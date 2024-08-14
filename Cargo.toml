@@ -1,14 +1,14 @@
 [package]
 name = "nutek-cipher"
-version = "1.0.1"
+version = "2.0.0"
 edition = "2021"
 categories = ["command-line-interface"]
 description = "Encrypt and decrypt files and text"
-license-file = "LICENSE"
-repository = "https://github.com/nutek-terminal/nutek-cipher"
-authors = ["Szymon Błaszczyński <museyoucoulduse@gmail.com>"]
+license = "MIT"
+repository = "https://github.com/NutekSecurity/nutek-cipher"
+authors = ["Neosb <neosb@nuteksecurity.com>"]
 readme = "README.md"
-keywords = ["decryption", "encryption", "cli"]
+keywords = ["decryption", "encryption", "cryptography"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
