@@ -20,7 +20,7 @@ jobs:
 
       - name: Compile Windows
         id: compile-windows
-        uses: rust-build/rust-build.action@v1.4.3
+        uses: rust-build/rust-build.action@v1.4.5
         with:
           RUSTTARGET: x86_64-pc-windows-gnu
           UPLOAD_MODE: none
@@ -34,7 +34,7 @@ jobs:
 
       - name: Compile Linux
         id: compile-linux
-        uses: rust-build/rust-build.action@v1.4.3
+        uses: rust-build/rust-build.action@v1.4.5
         with:
           RUSTTARGET: x86_64-unknown-linux-musl
           UPLOAD_MODE: none
@@ -48,7 +48,7 @@ jobs:
 
       - name: Compile MacOS
         id: compile-macos
-        uses: rust-build/rust-build.action@v1.4.3
+        uses: rust-build/rust-build.action@v1.4.5
         with:
           RUSTTARGET: x86_64-apple-darwin
           UPLOAD_MODE: none
@@ -84,9 +84,9 @@ jobs:
         with:
           repo_token: "${{ secrets.GH_TOKEN }}"
           draft: true
-          automatic_release_tag: "latest"
+          automatic_release_tag: "v2.0.2"
           prerelease: false
-          title: "CLI for your Shadowheart"
+          title: "Cryptography for your Shadow Heart"
           files: |
             NutekCipherMacOS.zip
             NutekCipherMacOS.zip.sha256

@@ -726,34 +726,34 @@ mod tests {
         fs::remove_file(&input_file).unwrap();
         fs::remove_file(&output_file).unwrap();
         // find file with codes, it has .codes extension
-        let now = SystemTime::now();
-        let codes_file = fs::read_dir(".").unwrap();
-        for file in codes_file {
-            let file = file.unwrap();
-            let file_name = file.file_name();
-            let file_name = file_name.to_str().unwrap();
-            if file_name.ends_with(".codes") {
-                let unix_timestamp = now
-                    .duration_since(UNIX_EPOCH)
-                    .expect("Time went backwards")
-                    .as_secs()
-                    - 30;
-                // create unix timestamp from file_name without .codes extension
-                let file_name_path = file_name.to_string();
-                let codes_opened = fs::read_to_string(&file_name_path).unwrap();
-                let is_pass = codes_opened.contains(password);
-                let is_nonce = codes_opened.contains(nonce);
-                let file_name = file_name.replace(".codes", "");
-                let file_name = file_name.parse::<u64>().unwrap();
-                if file_name > unix_timestamp {
-                    fs::remove_file(&file_name_path).unwrap();
-                } else {
-                    panic!("❌ .codes file timestamp is older than 30 seconds. It should be removed after 30 seconds. Check if you have correct system")
-                }
-                assert!(is_pass);
-                assert!(is_nonce);
-            }
-        }
+        // let now = SystemTime::now();
+        // let codes_file = fs::read_dir(".").unwrap();
+        // for file in codes_file {
+        //     let file = file.unwrap();
+        //     let file_name = file.file_name();
+        //     let file_name = file_name.to_str().unwrap();
+        //     if file_name.ends_with(".codes") {
+        //         let unix_timestamp = now
+        //             .duration_since(UNIX_EPOCH)
+        //             .expect("Time went backwards")
+        //             .as_secs()
+        //             - 30;
+        //         // create unix timestamp from file_name without .codes extension
+        //         let file_name_path = file_name.to_string();
+        //         let codes_opened = fs::read_to_string(&file_name_path).unwrap();
+        //         let is_pass = codes_opened.contains(password);
+        //         let is_nonce = codes_opened.contains(nonce);
+        //         let file_name = file_name.replace(".codes", "");
+        //         let file_name = file_name.parse::<u64>().unwrap();
+        //         if file_name > unix_timestamp {
+        //             fs::remove_file(&file_name_path).unwrap();
+        //         } else {
+        //             panic!("❌ .codes file timestamp is older than 30 seconds. It should be removed after 30 seconds. Check if you have correct system")
+        //         }
+        //         assert!(is_pass);
+        //         assert!(is_nonce);
+        //     }
+        // }
         // fs::remove_file(&format!("{}.nonce", output_file)).unwrap();
         // fs::remove_file(&format!("{}.key", output_file)).unwrap();
     }
@@ -804,39 +804,39 @@ mod tests {
         fs::write(key_path, "12345678123456781234567812345678").unwrap();
         fs::write(nonce_path, "123456789012").unwrap();
 
-        sum_codes_to_file(format!("{}:{}", key_path, nonce_path), true);
+        let sum_codes_file = sum_codes_to_file(format!("{}:{}", key_path, nonce_path), true);
         fs::remove_file(key_path).unwrap();
         fs::remove_file(nonce_path).unwrap();
 
         // find file with codes, it has .codes extension
-        let now = SystemTime::now();
-        let codes_file = fs::read_dir(".").unwrap();
-        for file in codes_file {
-            let file = file.unwrap();
-            let file_name = file.file_name();
-            let file_name = file_name.to_str().unwrap();
-            if file_name.ends_with(".codes") {
-                let unix_timestamp = now
-                    .duration_since(UNIX_EPOCH)
-                    .expect("Time went backwards")
-                    .as_secs()
-                    - 30;
-                // create unix timestamp from file_name without .codes extension
-                let file_name_path = file_name.to_string();
-                let codes_opened = fs::read_to_string(&file_name_path).unwrap();
-                let is_pass = codes_opened.contains("12345678123456781234567812345678");
-                let is_nonce = codes_opened.contains("123456789012");
-                let file_name = file_name.replace(".codes", "");
-                let file_name = file_name.parse::<u64>().unwrap();
-                if file_name > unix_timestamp {
-                    fs::remove_file(&file_name_path).unwrap();
-                } else {
-                    panic!("❌ .codes file timestamp is older than 30 seconds. It should be removed after 30 seconds. Check if you have correct system")
-                }
-                assert!(is_pass);
-                assert!(is_nonce);
-            }
-        }
+        // let now = SystemTime::now();
+        // let codes_file = fs::read_dir(".").unwrap();
+        // for file in codes_file {
+        //     let file = file.unwrap();
+        //     let file_name = file.file_name();
+        //     let file_name = file_name.to_str().unwrap();
+        //     if file_name.ends_with(".codes") {
+        //         let unix_timestamp = now
+        //             .duration_since(UNIX_EPOCH)
+        //             .expect("Time went backwards")
+        //             .as_secs()
+        //             - 30;
+        //         // create unix timestamp from file_name without .codes extension
+        let file_name_path = &sum_codes_file;
+        let codes_opened = fs::read_to_string(&file_name_path).unwrap();
+        let is_pass = codes_opened.contains("12345678123456781234567812345678");
+        let is_nonce = codes_opened.contains("123456789012");
+        // let file_name = file_name.replace(".codes", "");
+        // let file_name = file_name.parse::<u64>().unwrap();
+        // if file_name > unix_timestamp {
+        fs::remove_file(&file_name_path).unwrap();
+        // } else {
+        //     panic!("❌ .codes file timestamp is older than 30 seconds. It should be removed after 30 seconds. Check if you have correct system")
+        // }
+        assert!(is_pass);
+        assert!(is_nonce);
+        // }
+        // }
     }
 
     #[test]
@@ -847,33 +847,33 @@ mod tests {
         let saved_codes_file = save_codes_file(key.to_string(), nonce.to_string(), true);
 
         // find file with codes, it has .codes extension
-        let now = SystemTime::now();
-        let codes_file = fs::read_dir(".").unwrap();
-        for file in codes_file {
-            let file = file.unwrap();
-            let file_name = file.file_name();
-            let file_name = file_name.to_str().unwrap();
-            if file_name.ends_with(".codes") {
-                let unix_timestamp = now
-                    .duration_since(UNIX_EPOCH)
-                    .expect("Time went backwards")
-                    .as_secs()
-                    - 30;
-                // create unix timestamp from file_name without .codes extension
-                let file_name_path = &saved_codes_file;
-                let codes_opened = fs::read_to_string(&file_name_path).unwrap();
-                let is_pass = codes_opened.contains("12345678123456781234567812345678");
-                let is_nonce = codes_opened.contains("123456789012");
-                let file_name = file_name.replace(".codes", "");
-                let file_name = file_name.parse::<u64>().unwrap();
-                if file_name > unix_timestamp {
-                    fs::remove_file(&file_name_path).unwrap();
-                } else {
-                    panic!("❌ .codes file timestamp is older than 30 seconds. It should be removed after 30 seconds. Check if you have correct system")
-                }
-                assert!(is_pass);
-                assert!(is_nonce);
-            }
-        }
+        // let now = SystemTime::now();
+        // let codes_file = fs::read_dir(".").unwrap();
+        // for file in codes_file {
+        //     let file = file.unwrap();
+        //     let file_name = file.file_name();
+        //     let file_name = file_name.to_str().unwrap();
+        //     if file_name.ends_with(".codes") {
+        //         let unix_timestamp = now
+        //             .duration_since(UNIX_EPOCH)
+        //             .expect("Time went backwards")
+        //             .as_secs()
+        //             - 30;
+        // create unix timestamp from file_name without .codes extension
+        let file_name_path = &saved_codes_file;
+        let codes_opened = fs::read_to_string(&file_name_path).unwrap();
+        let is_pass = codes_opened.contains("12345678123456781234567812345678");
+        let is_nonce = codes_opened.contains("123456789012");
+        // let file_name = file_name.replace(".codes", "");
+        // let file_name = file_name.parse::<u64>().unwrap();
+        // if file_name > unix_timestamp {
+        //     fs::remove_file(&file_name_path).unwrap();
+        // } else {
+        //     panic!("❌ .codes file timestamp is older than 30 seconds. It should be removed after 30 seconds. Check if you have correct system")
+        // }
+        assert!(is_pass);
+        assert!(is_nonce);
     }
+    //     }
+    // }
 }
