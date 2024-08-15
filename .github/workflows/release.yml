@@ -48,7 +48,7 @@ jobs:
 
       - name: Compile MacOS
         id: compile-macos
-        uses: rust-build/rust-build.action@v1.4.5
+        uses: rust-build/rust-build.action@v1.4.3
         with:
           RUSTTARGET: x86_64-apple-darwin
           UPLOAD_MODE: none
