@@ -58,16 +58,29 @@ fn nuteksecurity_address() {
     println!("neosb@nuteksecurity.com");
 }
 
+fn get_home_dir() -> String {
+    // Check for HOME on Unix-like systems first
+    if cfg!(target_os = "windows") {
+        // On Windows, use USERPROFILE
+        env::var("USERPROFILE").unwrap_or_else(|_| {
+            println!("'USERPROFILE' environment variable not found.");
+            String::new()
+        })
+    } else {
+        env::var("HOME").unwrap_or_else(|_| {
+            println!("'HOME' environment variable not found.");
+            String::new()
+        })
+    }
+}
+
 fn save_codes_file(password: String, nonce: String, test: bool) -> String {
     // save key and nonce to file in format
     // key=12345678123456781234567812345678
     // nonce=123456123456
     // with name  as UNIX timestamp
     let now = SystemTime::now();
-    let home_dir = env::var("HOME").unwrap_or_else(|_| {
-        println!("'HOME' environment variable not found.");
-        String::new()
-    });
+    let home_dir = get_home_dir();
     let mut codes_file = format!(
         "{}/Downloads/{}.codes",
         home_dir,
@@ -130,10 +143,7 @@ fn sum_codes_to_file(sum_codes: String, test: bool) -> String {
     // nonce=123456123456
     // with name  as UNIX timestamp
     let now = SystemTime::now();
-    let home_dir = env::var("HOME").unwrap_or_else(|_| {
-        println!("'HOME' environment variable not found.");
-        String::new()
-    });
+    let home_dir = get_home_dir();
     let mut codes_file = format!(
         "{}/Downloads/{}.codes",
         home_dir,
@@ -283,7 +293,7 @@ fn main() {
                 println!("❌ Invalid mode. Must be --encrypt or --decrypt");
             }
         } else {
-            println!("❌ I must have either --output or --stdout");
+            println!("❌ I must have either --output-file or --stdout");
         }
         exit(0);
     }

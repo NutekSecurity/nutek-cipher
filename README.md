@@ -12,6 +12,42 @@ or download binary for your OS type from _GitHub_ release page
 
 [GitHub Releases Page](https://github.com/NutekSecurity/nutek-cipher/releases "Release Page")
 
+## Windows !IMPORTANT!
+
+Before downloading `nutek-cipher_null_x86_64-pc-windows-gnu.zip` file, add Downloads, or any directory where you will download this file, to exception list in Windows Defender.
+
+1. Open `Virus & threat protection`
+2. Open `Manage settings` under `Virus & threat protection settings`
+3. Under `Exclusions` click `Add or remove exclusions`
+4. Add the target download folder
+5. Download file
+6. Check SHA256 checksum for file integrity
+7. Unarchive it
+8. Remove exclusion for download folder
+9. Run `nutek-cipher.exe` - this should trigger _Windows Defender_ again
+10. Get back to `Virus & threat protection` and go to `Protection history`
+11. Find `nutek-cipher` under `Threat quarantined` and __restore__ it
+
+## SHA256
+
+Download archive for your operating system and corresponding `*.sha256` file.
+
+On UNIX (Linux/macOS) change directory to place where both files resides and issue this command
+
+```sh
+shs256sum -c nutek-cipher...name_of_your_file.sha256
+```
+
+On Windows
+
+```powershell
+cat  nutek-cipher_null_x86_64-pc-windows-gnu.zip.sha256
+Get-FileHash nutek-cipher_null_x86_64-pc-windows-gnu.zip -Algorithm SHA256 | Format-List
+```
+
+If the archive is actually the one downloaded from here, it should pass the test. On Windows, look for if the lowercase output of first command is the same as uppercase output of second command.
+
+
 ## usage
 
 ```shell
@@ -46,4 +82,4 @@ This program uses *AES-GCM-SIV* cipher with *32 bytes* key and *12 bytes* nonce.
 
 ## license
 
-Read [LICENSE](/LICENSE) file for more information.
+Apache-2.0 or MIT
