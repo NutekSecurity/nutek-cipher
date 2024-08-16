@@ -1,0 +1,22 @@
+name: Release with macOS GUI App
+
+on:
+  push:
+    tags: ["v*.*.*"] # Trigger on tag pushes (adjust the pattern as needed)
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+  CARGO_TERM_COLOR: always
+
+jobs:
+  download_and_release:
+    runs-on: ubuntu-latest
+    # Set the job to run on the platform specified by the matrix below
+    # runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download files
+        run: |
+          wget https://storage.googleapis.com/nuteksecurity-public/NutekCipherMacOS.zip -O NutekCipherMacOS.zip
+          wget https://storage.googleapis.com/nuteksecurity-public/NutekCipherMacOS.zip.sha256 -O NutekCipherMacOS.zip.sha256
+          ./.github/workflows/upload_asset.sh ./NutekCipherMacOS.zip $GITHUB_TOKEN

@@ -1,98 +1,72 @@
-name: Release with Artifacts
+name: Release with CLI apps
 
 on:
   push:
     tags: ["v*.*.*"] # Trigger on tag pushes (adjust the pattern as needed)
 
+env:
+  GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+  CARGO_TERM_COLOR: always
+
 jobs:
-  release:
-    name: release
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
+  build_and_release:
+    # runs-on: ubuntu-latest
+    # Set the job to run on the platform specified by the matrix below
+    runs-on: ${{ matrix.runner }}
+    # Define the build matrix for cross-compilation
+    strategy:
+      matrix:
+        include:
+          - name: linux-amd64
+            runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - name: linux-musl
+            runner: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+          - name: win-amd64
+            runner: windows-latest
+            target: x86_64-pc-windows-gnu
+          - name: macos-amd64
+            runner: macos-latest
+            target: x86_64-apple-darwin
+          - name: macos-arm64
+            runner: macos-latest
+            target: aarch64-apple-darwin
+
     steps:
-      - uses: actions/checkout@master
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Build
-        run: cargo build --verbose
-      - name: Run tests
-        run: cargo test --verbose
-
-      - name: Compile Windows
-        id: compile-windows
-        uses: rust-build/rust-build.action@v1.4.5
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
-          RUSTTARGET: x86_64-pc-windows-gnu
-          UPLOAD_MODE: none
-          ARCHIVE_TYPES: zip
+          targets: "${{ matrix.target }}"
 
-      - name: copy checksum
-        uses: canastro/copy-file-action@master
-        with:
-          source: ${{ steps.compile-windows.outputs.BUILT_CHECKSUM }}
-          target: "windows.sha256"
+      - name: Setup Cache
+        uses: Swatinem/rust-cache@v2
 
-      - name: Compile Linux
-        id: compile-linux
-        uses: rust-build/rust-build.action@v1.4.5
-        with:
-          RUSTTARGET: x86_64-unknown-linux-musl
-          UPLOAD_MODE: none
-          ARCHIVE_TYPES: tar.gz
+      - name: Build Binary
+        run: cargo build --verbose --locked --release --target ${{ matrix.target }}
 
-      - name: copy checksum
-        uses: canastro/copy-file-action@master
-        with:
-          source: ${{ steps.compile-linux.outputs.BUILT_CHECKSUM }}
-          target: "linux.sha256"
-
-      - name: Compile MacOS
-        id: compile-macos
-        uses: rust-build/rust-build.action@v1.4.3
-        with:
-          RUSTTARGET: x86_64-apple-darwin
-          UPLOAD_MODE: none
-          ARCHIVE_TYPES: zip
-
-      - name: copy checksum
-        uses: canastro/copy-file-action@master
-        with:
-          source: ${{ steps.compile-macos.outputs.BUILT_CHECKSUM }}
-          target: "macos.sha256"
-
-      - name: Download files
+      - name: Release Binary
+        shell: bash
         run: |
-          wget https://storage.googleapis.com/nuteksecurity-public/NutekCipherMacOS.zip -O NutekCipherMacOS.zip
-          wget https://storage.googleapis.com/nuteksecurity-public/NutekCipherMacOS.zip.sha256 -O NutekCipherMacOS.zip.sha256
-          # Add more wget commands for more files
+          PROJECT_NAME="nutek-cipher"
+          BIN_SUFFIX=""
+          if [[ "${{ matrix.runner }}" == "windows-latest" ]]; then
+            BIN_SUFFIX=".exe"
+          fi
 
-      - name: remove artifacts from sha256sum
-        id: sha
-        run: |
-          BASE_NAME=${{ steps.compile-windows.outputs.BUILT_ARCHIVE }}
-          sed 's/output\///g' windows.sha256 > "${BASE_NAME##*/}.sha256"
-          export WINDOWS_SHA="${BASE_NAME##*/}.sha256"
-          BASE_NAME=${{ steps.compile-linux.outputs.BUILT_ARCHIVE }}
-          sed 's/output\///g' linux.sha256 > "${BASE_NAME##*/}.sha256"
-          export LINUX_SHA="${BASE_NAME##*/}.sha256"
-          BASE_NAME=${{ steps.compile-macos.outputs.BUILT_ARCHIVE }}
-          sed 's/output\///g' macos.sha256  > "${BASE_NAME##*/}.sha256"
-          export MACOS_SHA="${BASE_NAME##*/}.sha256"
+          # The built binary output location
+          BIN_OUTPUT="target/${{ matrix.target }}/release/${PROJECT_NAME}${BIN_SUFFIX}"
 
-      - name: Release
-        uses: "marvinpinto/action-automatic-releases@latest"
-        with:
-          repo_token: "${{ secrets.GH_TOKEN }}"
-          draft: true
-          automatic_release_tag: "v2.0.4"
-          prerelease: false
-          title: "Cryptography for your Shadow Heart"
-          files: |
-            NutekCipherMacOS.zip
-            NutekCipherMacOS.zip.sha256
-            ${{ steps.compile-windows.outputs.BUILT_ARCHIVE }}
-            ${{ steps.compile-linux.outputs.BUILT_ARCHIVE }}
-            ${{ steps.compile-macos.outputs.BUILT_ARCHIVE }}
-            nutek-cipher_null_x86_64-apple-darwin.zip.sha256
-            nutek-cipher_null_x86_64-pc-windows-gnu.zip.sha256
-            nutek-cipher_null_x86_64-unknown-linux-musl.tar.gz.sha256
+
+          # Define a better name for the final binary
+          BIN_RELEASE="${PROJECT_NAME}-${{ matrix.name }}${BIN_SUFFIX}"
+          BIN_RELEASE_VERSIONED="${PROJECT_NAME}-${{ github.ref_name }}-${{ matrix.name }}${BIN_SUFFIX}"
+
+          # Move the built binary where you want it
+          mv "${BIN_OUTPUT}" "./${BIN_RELEASE_VERSIONED}"
+
+          # zip "$BIN_RELEASE".zip -9 "$BIN_RELEASE_VERSIONED"
+          ./.github/workflows/upload_asset.sh "${BIN_RELEASE_VERSIONED}" $GITHUB_TOKEN
