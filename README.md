@@ -1,6 +1,6 @@
 # Nutek Cipher
 
-![Nutek Cipher logo](logo.png)
+![Nutek Cipher logo](logo-small.png)
 
 Encrypt and decrypt files and text with ease.
 
