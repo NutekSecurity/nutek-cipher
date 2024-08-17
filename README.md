@@ -1,4 +1,6 @@
-# nutek-cipher
+# Nutek Cipher
+
+![Nutek Cipher logo](logo.png)
 
 Encrypt and decrypt files and text with ease.
 
@@ -11,6 +13,10 @@ cargo install nutek-cipher
 or download binary for your OS type from _GitHub_ release page
 
 [GitHub Releases Page](https://github.com/NutekSecurity/nutek-cipher/releases "Release Page")
+
+## There is a macOS desktop version too!
+
+![macOS desktop](macOS-GUI.png)
 
 ## usage
 
