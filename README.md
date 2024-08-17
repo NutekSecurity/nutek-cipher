@@ -14,9 +14,30 @@ or download binary for your OS type from _GitHub_ release page
 
 [GitHub Releases Page](https://github.com/NutekSecurity/nutek-cipher/releases "Release Page")
 
-## There is a macOS desktop version too!
+## Docker/Podman - the safest option for most operating systems
+
+Pull docker image:
+
+```sh
+docker pull neosb/nutek-cipher:minimal
+```
+
+After this you can start using program with:
+
+```sh
+docker run -it -rm -v /path/to/host/folder:/app/directory neosb/nutek-sipher:minimal nutek-cipher --help
+```
+
+* `-it` make it interactive
+* `-rm` deletes the container after finishing work with `exit`/`ctrl`+`c`
+* `-v` attaches file or directory to `/app/directory` in container
+
+## There is also macOS desktop version too!
 
 ![macOS desktop](macOS-GUI.png)
+
+Look into [GitHub Releases Page](https://github.com/NutekSecurity/nutek-cipher/releases "Release Page") and take a look at
+`NutekCipherMacOS.zip`
 
 ## usage
 

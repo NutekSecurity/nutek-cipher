@@ -55,3 +55,5 @@ pub struct Cli {
     #[arg(long, default_value = "false")]
     pub stdout: bool,
 }
+
+// git config --global http.postBuffer 1048576000
