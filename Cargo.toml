@@ -1,10 +1,10 @@
 [package]
 name = "nutek-cipher"
-version = "2.0.4"
+version = "2.0.7"
 edition = "2021"
 categories = ["command-line-interface"]
-description = "Encrypt and decrypt files and text"
-license = "MIT"
+description = "Encrypt and decrypt files and text with ease"
+license = "MIT OR Apache-2.0"
 repository = "https://github.com/NutekSecurity/nutek-cipher"
 authors = ["Neosb <neosb@nuteksecurity.com>"]
 readme = "README.md"

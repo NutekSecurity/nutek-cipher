@@ -15,7 +15,8 @@ use aes_gcm_siv::{
     Nonce,
 };
 use std::env;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::thread::sleep;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use text_io::read;
 
 fn decrypt(key_slice: &[u8], nonce_slice: &[u8], ciphertext: Vec<u8>) -> Option<Vec<u8>> {
@@ -78,7 +79,7 @@ fn save_codes_file(password: String, nonce: String, test: bool) -> String {
     // save key and nonce to file in format
     // key=12345678123456781234567812345678
     // nonce=123456123456
-    // with name  as UNIX timestamp
+    // with name as UNIX timestamp
     let now = SystemTime::now();
     let home_dir = get_home_dir();
     let mut codes_file = format!(
@@ -86,54 +87,92 @@ fn save_codes_file(password: String, nonce: String, test: bool) -> String {
         home_dir,
         now.duration_since(UNIX_EPOCH)
             .expect("Time went backwards")
-            .as_secs()
+            .as_nanos()
     );
     if test {
         codes_file = format!(
             "{}.codes",
             now.duration_since(UNIX_EPOCH)
                 .expect("Time went backwards")
-                .as_secs()
+                .as_nanos()
         );
     }
-    let mut codes_file_buf = BufWriter::new(File::create(&codes_file).unwrap());
-    codes_file_buf
-        .write_all(
-            format!(
-                "key={}
+
+    match File::open(&codes_file) {
+        Ok(_) => {
+            eprintln!("Codes file with the same name already exist. Waiting some time...");
+            let delay_duration = Duration::from_nanos(10 * 1000 * 1000); // 10 milliseconds
+            sleep(delay_duration);
+            println!("Delay completed!");
+            return save_codes_file(password, nonce, test);
+        }
+        Err(_) => {
+            // Handle error here, e.g., log an error and return or panic
+            // println!("Error opening file: {}", error);
+            let mut codes_file_buf = BufWriter::new(File::create(&codes_file).unwrap());
+            codes_file_buf
+                .write_all(
+                    format!(
+                        "key={}
 nonce={}
 ",
-                password, nonce
-            )
-            .as_bytes(),
-        )
-        .unwrap();
-    println!("🔑 Written key and nonce to: {}", &codes_file);
-    return codes_file;
+                        password, nonce
+                    )
+                    .as_bytes(),
+                )
+                .unwrap();
+            println!("🔑 Written key and nonce to: {}", &codes_file);
+            return codes_file;
+        }
+    }
 }
 
 fn sum_codes_to_file(sum_codes: String, test: bool) -> String {
-    let mut sum_array = sum_codes.split(":").into_iter();
+    if !sum_codes.contains(":") {
+        panic!("🙀 error: --sum-codes should be a path separated with ':' - key.file_path:nonce.file_path")
+    }
 
-    let key_path = sum_array.next().unwrap().to_owned();
-    let nonce_path = sum_array.next().unwrap().to_owned();
+    // Split the input string into an iterator over substrings separated by ":"
+    let mut sums_array = sum_codes.split(':').map(|s| s.to_owned());
+
+    // Get the key path from the first element of the iterator
+    let key_path = sums_array.next().unwrap();
+
+    // Get the nonce path from the second element of the iterator
+    let nonce_path = sums_array.next().unwrap();
 
     let mut key = String::new();
-    let file = File::open(key_path).expect("Failed to open key file");
-    let mut reader = BufReader::new(file);
-    reader.read_line(&mut key).unwrap();
-    if key.starts_with("key=") {
-        let shorter = key[4..].to_string();
-        key = shorter;
+    match File::open(&key_path) {
+        Ok(file) => {
+            // Code here will only run if file was successfully opened
+            let mut reader = BufReader::new(file);
+            reader.read_line(&mut key).unwrap();
+            if key.starts_with("key=") {
+                let shorter = key[4..].to_string();
+                key = shorter;
+            }
+        }
+        Err(error) => {
+            // Handle error here, e.g., log an error and return or panic
+            println!("Error opening file: {}", error);
+        }
     }
 
     let mut nonce = String::new();
-    let file = File::open(nonce_path).expect("Failed to open nonce file");
-    let mut reader = BufReader::new(file);
-    reader.read_line(&mut nonce).unwrap();
-    if key.starts_with("nonce=") {
-        let shorter = key[6..].to_string();
-        nonce = shorter;
+    match File::open(&nonce_path) {
+        Ok(file) => {
+            // Code here will only run if file was successfully opened
+            let mut reader = BufReader::new(file);
+            reader.read_line(&mut nonce).unwrap();
+            if nonce.starts_with("key=") {
+                let shorter = nonce[6..].to_string();
+                nonce = shorter;
+            }
+        }
+        Err(error) => {
+            // Handle error here, e.g., log an error and return or panic
+            println!("Error opening file: {}", error);
+        }
     }
 
     assert_eq!(key.len(), 32, "❌ Key must be 32 characters long");
@@ -142,39 +181,9 @@ fn sum_codes_to_file(sum_codes: String, test: bool) -> String {
     // key=12345678123456781234567812345678
     // nonce=123456123456
     // with name  as UNIX timestamp
-    let now = SystemTime::now();
-    let home_dir = get_home_dir();
-    let mut codes_file = format!(
-        "{}/Downloads/{}.codes",
-        home_dir,
-        now.duration_since(UNIX_EPOCH)
-            .expect("Time went backwards")
-            .as_secs()
-    );
-    if test {
-        codes_file = format!(
-            "{}.codes",
-            now.duration_since(UNIX_EPOCH)
-                .expect("Time went backwards")
-                .as_secs()
-        );
-    }
-    let mut codes_file_buf = BufWriter::new(File::create(&codes_file).unwrap());
-    codes_file_buf
-        .write_all(
-            format!(
-                "key={}
-nonce={}
-",
-                key, nonce
-            )
-            .as_bytes(),
-        )
-        .unwrap();
-    println!(
-        "✅ Written new codes file from provided paths to key and nonce into {}. Exiting...",
-        &codes_file
-    );
+
+    let codes_file = save_codes_file(key, nonce, test);
+
     if !test {
         exit(0)
     } else {
@@ -276,9 +285,6 @@ fn main() {
                     false,
                 )
                 .expect("can't encrypt");
-                // if cli.save_codes {
-                //     save_codes_file(key, nonce)
-                // }
                 key_and_nonce_warning();
                 virtual_money();
                 nuteksecurity_address();
@@ -342,9 +348,6 @@ fn main() {
                 false,
             )
             .expect("can't encrypt");
-            // if cli.save_codes {
-            //     save_codes_file(key, nonce)
-            // }
             key_and_nonce_warning();
             virtual_money();
             nuteksecurity_address();
@@ -388,9 +391,6 @@ fn main() {
     } else {
         println!("❌ I must have either --output-file or --stdout");
     }
-    // } else {
-    //     println!("❌ I must have either --input or data from pipe");
-    // }
 }
 
 fn encrypt_stdin(
@@ -401,7 +401,7 @@ fn encrypt_stdin(
     nonce: &str,
     should_save_codes: bool,
     test: bool,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<String, Box<dyn std::error::Error>> {
     println!("🔐 Encrypting...");
     let encrypted_content = encrypt(cleartext.as_bytes(), nonce.as_bytes(), password.as_bytes());
     println!("✅ Done!");
@@ -410,17 +410,7 @@ fn encrypt_stdin(
         let file = output_file.clone();
         let mut output_file_buf = BufWriter::new(File::create(output_file)?);
         output_file_buf.write_all(&encrypted_content)?;
-        let nonce_file = format!("{}.nonce", file);
-        let nonce_file_clone = nonce_file.clone();
-        let mut nonce_file_buf = BufWriter::new(File::create(nonce_file)?);
-        nonce_file_buf.write_all(nonce.as_bytes())?;
-        let password_file = format!("{}.key", file);
-        let password_file_clone = password_file.clone();
-        let mut password_file_buf = BufWriter::new(File::create(password_file)?);
-        password_file_buf.write_all(password.as_bytes())?;
         println!("Wrote encrypted content to: {}", file);
-        println!("🔑 Wrote nonce to: {}", nonce_file_clone);
-        println!("🔑 Wrote key to: {}", password_file_clone);
     }
 
     if stdout {
@@ -430,11 +420,12 @@ fn encrypt_stdin(
         println!("🔑 Key: \n{}", password);
     }
 
+    let mut codes_file: String = String::new();
     if should_save_codes {
-        let _ = save_codes_file(password.to_string(), nonce.to_string(), test);
+        codes_file = save_codes_file(password.to_string(), nonce.to_string(), test);
     }
 
-    Ok(())
+    Ok(codes_file)
 }
 
 fn decrypt_stdin(
@@ -484,7 +475,7 @@ fn encrypt_file(
     stdout: bool,
     should_save_codes: bool,
     test: bool,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<String, Box<dyn std::error::Error>> {
     // Read the input file
     let mut input_file = BufReader::new(File::open(input_file)?);
     let mut input_contents = Vec::new();
@@ -529,11 +520,12 @@ fn encrypt_file(
         println!("🔑 Key: \n{}", password);
     }
 
+    let mut codes_file: String = String::new();
     if should_save_codes {
-        let _ = save_codes_file(password.to_string(), nonce.to_string(), test);
+        codes_file = save_codes_file(password.to_string(), nonce.to_string(), test);
     }
 
-    Ok(())
+    Ok(codes_file)
 }
 
 fn decrypt_file(
@@ -640,35 +632,15 @@ mod tests {
 
         // Clean up the test input and output files
         fs::remove_file(&output_file).unwrap();
-        fs::remove_file(&format!("{}.nonce", output_file_clone)).unwrap();
-        fs::remove_file(&format!("{}.key", output_file_clone)).unwrap();
 
-        let now = SystemTime::now();
-        let codes_file = fs::read_dir(".").unwrap();
-        for file in codes_file {
-            let file = file.unwrap();
-            let file_name = file.file_name();
-            let file_name = file_name.to_str().unwrap();
-            if file_name.ends_with(".codes") {
-                let unix_timestamp = now
-                    .duration_since(UNIX_EPOCH)
-                    .expect("Time went backwards")
-                    .as_secs()
-                    - 30;
-                // create unix timestamp from file_name without .codes extension
-                let file_name_path = file_name.to_string();
-                let codes_opened = fs::read_to_string(&file_name_path).unwrap();
-                assert!(codes_opened.contains(password));
-                assert!(codes_opened.contains(nonce));
-                let file_name = file_name.replace(".codes", "");
-                let file_name = file_name.parse::<u64>().unwrap();
-                if file_name > unix_timestamp {
-                    fs::remove_file(file_name_path).unwrap();
-                } else {
-                    panic!("❌ .codes file timestamp is older than 30 seconds. It should be removed after 30 seconds. Check if you have correct system")
-                }
-            }
-        }
+        let codes_file = result.unwrap();
+
+        let file_name_path = &codes_file;
+        let codes_opened = fs::read_to_string(&file_name_path).unwrap();
+        fs::remove_file(file_name_path).unwrap();
+
+        assert!(codes_opened.contains(password));
+        assert!(codes_opened.contains(nonce));
     }
 
     #[test]
@@ -711,7 +683,7 @@ mod tests {
             password,
             nonce,
             stdout,
-            false,
+            true,
             true,
         );
 
@@ -725,37 +697,15 @@ mod tests {
         // Clean up the test input and output files
         fs::remove_file(&input_file).unwrap();
         fs::remove_file(&output_file).unwrap();
-        // find file with codes, it has .codes extension
-        // let now = SystemTime::now();
-        // let codes_file = fs::read_dir(".").unwrap();
-        // for file in codes_file {
-        //     let file = file.unwrap();
-        //     let file_name = file.file_name();
-        //     let file_name = file_name.to_str().unwrap();
-        //     if file_name.ends_with(".codes") {
-        //         let unix_timestamp = now
-        //             .duration_since(UNIX_EPOCH)
-        //             .expect("Time went backwards")
-        //             .as_secs()
-        //             - 30;
-        //         // create unix timestamp from file_name without .codes extension
-        //         let file_name_path = file_name.to_string();
-        //         let codes_opened = fs::read_to_string(&file_name_path).unwrap();
-        //         let is_pass = codes_opened.contains(password);
-        //         let is_nonce = codes_opened.contains(nonce);
-        //         let file_name = file_name.replace(".codes", "");
-        //         let file_name = file_name.parse::<u64>().unwrap();
-        //         if file_name > unix_timestamp {
-        //             fs::remove_file(&file_name_path).unwrap();
-        //         } else {
-        //             panic!("❌ .codes file timestamp is older than 30 seconds. It should be removed after 30 seconds. Check if you have correct system")
-        //         }
-        //         assert!(is_pass);
-        //         assert!(is_nonce);
-        //     }
-        // }
-        // fs::remove_file(&format!("{}.nonce", output_file)).unwrap();
-        // fs::remove_file(&format!("{}.key", output_file)).unwrap();
+
+        let codes_file = result.unwrap();
+
+        let file_name_path = &codes_file;
+        let codes_opened = fs::read_to_string(&file_name_path).unwrap();
+        fs::remove_file(file_name_path).unwrap();
+
+        assert!(codes_opened.contains(password));
+        assert!(codes_opened.contains(nonce));
     }
 
     #[test]
@@ -807,36 +757,16 @@ mod tests {
         let sum_codes_file = sum_codes_to_file(format!("{}:{}", key_path, nonce_path), true);
         fs::remove_file(key_path).unwrap();
         fs::remove_file(nonce_path).unwrap();
-
-        // find file with codes, it has .codes extension
-        // let now = SystemTime::now();
-        // let codes_file = fs::read_dir(".").unwrap();
-        // for file in codes_file {
-        //     let file = file.unwrap();
-        //     let file_name = file.file_name();
-        //     let file_name = file_name.to_str().unwrap();
-        //     if file_name.ends_with(".codes") {
-        //         let unix_timestamp = now
-        //             .duration_since(UNIX_EPOCH)
-        //             .expect("Time went backwards")
-        //             .as_secs()
-        //             - 30;
-        //         // create unix timestamp from file_name without .codes extension
         let file_name_path = &sum_codes_file;
         let codes_opened = fs::read_to_string(&file_name_path).unwrap();
+        eprintln!("{}", codes_opened);
+        println!("{}", codes_opened);
         let is_pass = codes_opened.contains("12345678123456781234567812345678");
         let is_nonce = codes_opened.contains("123456789012");
-        // let file_name = file_name.replace(".codes", "");
-        // let file_name = file_name.parse::<u64>().unwrap();
-        // if file_name > unix_timestamp {
         fs::remove_file(&file_name_path).unwrap();
-        // } else {
-        //     panic!("❌ .codes file timestamp is older than 30 seconds. It should be removed after 30 seconds. Check if you have correct system")
-        // }
+
         assert!(is_pass);
         assert!(is_nonce);
-        // }
-        // }
     }
 
     #[test]
@@ -846,31 +776,11 @@ mod tests {
 
         let saved_codes_file = save_codes_file(key.to_string(), nonce.to_string(), true);
 
-        // find file with codes, it has .codes extension
-        // let now = SystemTime::now();
-        // let codes_file = fs::read_dir(".").unwrap();
-        // for file in codes_file {
-        //     let file = file.unwrap();
-        //     let file_name = file.file_name();
-        //     let file_name = file_name.to_str().unwrap();
-        //     if file_name.ends_with(".codes") {
-        //         let unix_timestamp = now
-        //             .duration_since(UNIX_EPOCH)
-        //             .expect("Time went backwards")
-        //             .as_secs()
-        //             - 30;
-        // create unix timestamp from file_name without .codes extension
         let file_name_path = &saved_codes_file;
         let codes_opened = fs::read_to_string(&file_name_path).unwrap();
         let is_pass = codes_opened.contains("12345678123456781234567812345678");
         let is_nonce = codes_opened.contains("123456789012");
-        // let file_name = file_name.replace(".codes", "");
-        // let file_name = file_name.parse::<u64>().unwrap();
-        // if file_name > unix_timestamp {
-        //     fs::remove_file(&file_name_path).unwrap();
-        // } else {
-        //     panic!("❌ .codes file timestamp is older than 30 seconds. It should be removed after 30 seconds. Check if you have correct system")
-        // }
+        fs::remove_file(&file_name_path).unwrap();
         assert!(is_pass);
         assert!(is_nonce);
     }
