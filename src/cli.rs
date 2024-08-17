@@ -2,7 +2,7 @@ use clap::Parser;
 
 /// Encrypt or decrypt a file or text from stdin
 #[derive(Parser)]
-#[command(author = "Neosb <neosb@nuteksecurity.com>", version, about = "File or text (from standard input) encryption for modern days", long_about = None, help_template = "\
+#[command(author = "Neosb <neosb@nuteksecurity.com>", version, about = "File and text (from standard input) encryption for modern days", long_about = None, help_template = "\
 {before-help}{name} {version}
 {author-with-newline}{about-with-newline}
 {usage-heading} {usage}
