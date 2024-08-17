@@ -2,7 +2,13 @@ use clap::Parser;
 
 /// Encrypt or decrypt a file or text from stdin
 #[derive(Parser)]
-#[command(author = "Neosb <neosb@nuteksecurity.com>", version, about = "File or text (from standard input) encryption for modern days", long_about = None)]
+#[command(author = "Neosb <neosb@nuteksecurity.com>", version, about = "File or text (from standard input) encryption for modern days", long_about = None, help_template = "\
+{before-help}{name} {version}
+{author-with-newline}{about-with-newline}
+{usage-heading} {usage}
+
+{all-args}{after-help}
+", arg_required_else_help = true)]
 pub struct Cli {
     /// encrypt
     #[arg(short, long, default_value = "false")]
