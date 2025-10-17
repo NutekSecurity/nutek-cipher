@@ -1,6 +1,10 @@
 # Nutek Cipher
 
-![Nutek Cipher logo](logo-small.png)
+![Crates.io Total Downloads](https://img.shields.io/crates/d/nutek-cipher)
+
+![Crates.io Downloads (latest version)](https://img.shields.io/crates/dv/nutek-cipher)
+
+![Crates.io Version](https://img.shields.io/crates/v/nutek-cipher)
 
 Encrypt and decrypt files and text with ease.
 
@@ -25,19 +29,12 @@ docker pull neosb/nutek-cipher:minimal
 After this you can start using program with:
 
 ```sh
-docker run -it -rm -v /path/to/host/folder:/app/directory neosb/nutek-sipher:minimal nutek-cipher --help
+docker run -it -rm -v /path/to/host/folder:/app/directory neosb/nutek-cipher:minimal nutek-cipher --help
 ```
 
 * `-it` make it interactive
 * `-rm` deletes the container after finishing work with `exit`/`ctrl`+`c`
 * `-v` attaches file or directory to `/app/directory` in container
-
-## There is also macOS desktop version too!
-
-![macOS desktop](macOS-GUI.png)
-
-Look into [GitHub Releases Page](https://github.com/NutekSecurity/nutek-cipher/releases "Release Page") and take a look at
-`NutekCipherMacOS.zip`
 
 ## usage
 
