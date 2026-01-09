@@ -1,3 +1,5 @@
+[Support the Developer](https://paypal.me/neosb)
+
 # Nutek Cipher
 
 ![Crates.io Total Downloads](https://img.shields.io/crates/d/nutek-cipher)
@@ -7,6 +9,8 @@
 ![Crates.io Version](https://img.shields.io/crates/v/nutek-cipher)
 
 Encrypt and decrypt files and text with ease.
+
+![DirNutek Terminal Recording](terminal-recording.gif)
 
 ## setup
 
